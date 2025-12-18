@@ -154,13 +154,15 @@ export default function UsersManagementPage() {
         <HStack justify="space-between" mb={2}>
           <Heading size="xl">Gestione Clienti</Heading>
           <Button
-            leftIcon={<FiPlus />}
             bg="black"
             color="white"
             _hover={{ bg: 'gray.800' }}
             onClick={() => setIsModalOpen(true)}
           >
-            Nuovo Cliente
+            <HStack gap={2}>
+              <FiPlus />
+              <span>Nuovo Cliente</span>
+            </HStack>
           </Button>
         </HStack>
       </Box>
@@ -239,26 +241,38 @@ export default function UsersManagementPage() {
           
           {/* Search Bar con Filtri */}
           <HStack gap={2}>
-            <Box
-              as="select"
-              size="sm"
-              borderRadius="lg"
-              borderWidth="1px"
-              borderColor="gray.200"
-              bg="white"
-              px={3}
-              py={2}
-              fontSize="sm"
-              cursor="pointer"
+            <select
               value={filterField}
               onChange={(e) => setFilterField(e.target.value as 'all' | 'name' | 'email')}
-              _hover={{ borderColor: 'gray.300' }}
-              _focus={{ borderColor: 'black', outline: 'none', boxShadow: '0 0 0 1px black' }}
+              style={{
+                borderRadius: '8px',
+                borderWidth: '1px',
+                borderColor: '#E2E8F0',
+                background: 'white',
+                paddingLeft: '12px',
+                paddingRight: '12px',
+                paddingTop: '8px',
+                paddingBottom: '8px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                height: '40px',
+                outline: 'none',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = '#CBD5E0'}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = '#E2E8F0'}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'black';
+                e.currentTarget.style.boxShadow = '0 0 0 1px black';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#E2E8F0';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               <option value="all">Tutti i campi</option>
               <option value="name">Nome</option>
               <option value="email">Email</option>
-            </Box>
+            </select>
 
             <Box position="relative" w="250px">
               <Icon
@@ -323,11 +337,13 @@ export default function UsersManagementPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    leftIcon={<FiChevronLeft />}
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                   >
-                    Precedente
+                    <HStack gap={1}>
+                      <FiChevronLeft />
+                      <span>Precedente</span>
+                    </HStack>
                   </Button>
                   
                   {/* Page numbers */}
@@ -367,11 +383,13 @@ export default function UsersManagementPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    rightIcon={<FiChevronRight />}
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                   >
-                    Successiva
+                    <HStack gap={1}>
+                      <span>Successiva</span>
+                      <FiChevronRight />
+                    </HStack>
                   </Button>
                 </HStack>
               </Flex>

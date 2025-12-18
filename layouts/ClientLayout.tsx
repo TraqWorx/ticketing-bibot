@@ -36,7 +36,7 @@ export const ClientLayout = ({ children, accountStatus = 'active' }: ClientLayou
         zIndex={99}
         display={{ base: 'block', lg: 'none' }}
       >
-        <ClientHeader accountStatus={accountStatus} />
+        <ClientHeader />
       </Box>
 
       {/* Sidebar Desktop - Fixed */}
@@ -53,7 +53,7 @@ export const ClientLayout = ({ children, accountStatus = 'active' }: ClientLayou
       >
         {/* Header Desktop */}
         <Box display={{ base: 'none', lg: 'block' }}>
-          <ClientHeader accountStatus={accountStatus} />
+          <ClientHeader />
         </Box>
 
         <Container maxW="container.xl" py={8} px={{ base: 4, md: 8 }}>

@@ -88,7 +88,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
             fontSize="sm"
             fontWeight="600"
             color="gray.800"
-            noOfLines={2}
+            lineClamp={2}
             flex={1}
             lineHeight="1.4"
           >
@@ -108,7 +108,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
           <Text
             fontSize="xs"
             color="gray.600"
-            noOfLines={2}
+            lineClamp={2}
             lineHeight="1.5"
           >
             {ticket.description}

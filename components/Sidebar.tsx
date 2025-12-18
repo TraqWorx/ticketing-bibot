@@ -71,7 +71,7 @@ const SidebarContent = ({ onItemClick }: SidebarContentProps) => {
             fontSize="xs" 
             fontWeight="bold" 
             textTransform="uppercase" 
-            lettergap="wide"
+            letterSpacing="wide"
             color="gray.500"
           >
             Features

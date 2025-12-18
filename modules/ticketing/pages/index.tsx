@@ -82,7 +82,7 @@ export default function TicketingPage() {
   if (loading) {
     return (
       <Flex justify="center" align="center" h="400px">
-        <Spinner size="xl" color="black" thickness="3px" />
+        <Spinner size="xl" color="black" />        
       </Flex>
     );
   }
@@ -115,20 +115,24 @@ export default function TicketingPage() {
           <Button
             size="sm"
             variant="ghost"
-            leftIcon={<FiFilter />}
             color="gray.700"
           >
-            Filtri
+            <HStack gap={1}>
+              <FiFilter />
+              <span>Filtri</span>
+            </HStack>
           </Button>
           
           <Button
             size="sm"
             bg="black"
             color="white"
-            leftIcon={<FiPlus />}
             _hover={{ bg: 'gray.800' }}
           >
-            Nuovo Ticket
+            <HStack gap={1}>
+              <FiPlus />
+              <span>Nuovo Ticket</span>
+            </HStack>
           </Button>
         </HStack>
       </Flex>
@@ -191,7 +195,7 @@ export default function TicketingPage() {
                     fontWeight="700"
                     color="gray.800"
                     textTransform="uppercase"
-                    lettergap="wide"
+                    letterSpacing="wide"
                   >
                     {statusLabels[status as TicketStatus]}
                   </Text>

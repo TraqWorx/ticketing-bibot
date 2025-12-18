@@ -113,7 +113,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
             isOpen={isOpen}
             onClose={onClose}
             title="Dettaglio Ticket"
-            size="2xl"
+            size="xl"
         >
             <VStack align="stretch" gap={6}>
                 {/* Titolo */}
@@ -137,7 +137,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                         fontWeight="600"
                         fontSize="xs"
                         textTransform="uppercase"
-                        lettergap="0.5px"
+                        letterSpacing="0.5px"
                         boxShadow="sm"
                     >
                         {statusLabels[ticket.status]}
@@ -151,7 +151,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                         fontWeight="600"
                         fontSize="xs"
                         textTransform="uppercase"
-                        lettergap="0.5px"
+                        letterSpacing="0.5px"
                         boxShadow="sm"
                     >
                         {priorityLabels[ticket.priority]}
@@ -190,7 +190,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
 
                 {/* Descrizione */}
                 <Box>
-                    <Text fontSize="xs" fontWeight="700" color="gray.500" mb={3} textTransform="uppercase" lettergap="0.5px">
+                    <Text fontSize="xs" fontWeight="700" color="gray.500" mb={3} textTransform="uppercase" letterSpacing="0.5px">
                         Descrizione
                     </Text>
                     <Box
@@ -209,7 +209,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
 
                 {/* Sezione Commenti */}
                 <Box pt={2}>
-                    <Text fontSize="xs" fontWeight="700" color="gray.500" mb={4} textTransform="uppercase" lettergap="0.5px">
+                    <Text fontSize="xs" fontWeight="700" color="gray.500" mb={4} textTransform="uppercase" letterSpacing="0.5px">
                         Attività e Commenti
                     </Text>
 
@@ -290,7 +290,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                         borderWidth="1px"
                         borderColor="gray.100"
                     >
-                        <Text fontSize="xs" fontWeight="700" color="gray.500" mb={3} textTransform="uppercase" lettergap="0.5px">
+                        <Text fontSize="xs" fontWeight="700" color="gray.500" mb={3} textTransform="uppercase" letterSpacing="0.5px">
                             💭 Aggiungi un commento
                         </Text>
                         <VStack align="stretch" gap={3}>

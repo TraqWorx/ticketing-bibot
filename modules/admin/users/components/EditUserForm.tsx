@@ -89,7 +89,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                     <Text fontSize="sm" fontWeight="medium" mb={1} color="gray.600">Client ID</Text>
                     <Input
                         value={user.client_id}
-                        isReadOnly
+                        readOnly
                         bg="gray.100"
                         color="gray.600"
                         cursor="not-allowed"
@@ -102,7 +102,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                     <Input
                         type="email"
                         value={user.email}
-                        isReadOnly
+                        readOnly
                         bg="gray.100"
                         color="gray.600"
                         cursor="not-allowed"
