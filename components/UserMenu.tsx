@@ -40,8 +40,7 @@ export const UserMenu = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      toast.success('Logout effettuato');
-      router.push('/login');
+      // ProtectedRoute gestisce automaticamente il redirect
     } catch (error) {
       toast.error('Errore durante il logout');
     }

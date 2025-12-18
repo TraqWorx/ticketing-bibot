@@ -19,13 +19,37 @@ export enum TicketPriority {
   URGENT = 'urgent'
 }
 
+export interface Assignee {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+export interface Comment {
+  id: string;
+  author: {
+    name: string;
+    avatar?: string;
+  };
+  content: string;
+  createdAt: Date;
+  isSystemMessage?: boolean;
+}
+
 export interface Ticket {
   id: string;
   title: string;
   description: string;
   status: TicketStatus;
   priority: TicketPriority;
-  assignee?: string;
+  assignee?: Assignee;
+  tags?: string[];
+  dueDate?: Date;
+  commentsCount?: number;
+  attachmentsCount?: number;
+  comments?: Comment[];
+  createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -24,10 +24,10 @@ interface MenuItem {
     path: string;
 }
 
-// Menu ADMIN - Solo gestione utenti per ora
+// Menu ADMIN - Solo gestione clienti per ora
 const adminMenuItems: MenuItem[] = [
     {
-        label: 'Gestione Utenti',
+        label: 'Gestione Clienti',
         icon: <FiUsers />,
         path: '/admin/users',
     },

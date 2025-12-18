@@ -12,7 +12,7 @@
  * Pattern: Presentational + Firebase Auth
  */
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import {
   Box,
@@ -30,10 +30,17 @@ import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 export const LoginPage = () => {
   const router = useRouter();
   const { signIn } = useAuth();
+  const [isVisible, setIsVisible] = useState(false);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Fade-in animation per evitare glitch
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -48,7 +55,6 @@ export const LoginPage = () => {
 
     try {
       await signIn(email, password);
-      toast.success('Login effettuato!');
       // Redirect esplicito alla homepage
       router.push('/');
     } catch (err: any) {
@@ -70,12 +76,18 @@ export const LoginPage = () => {
         boxShadow="lg"
         w="full"
         maxW="400px"
+        opacity={isVisible ? 1 : 0}
+        transform={isVisible ? 'scale(1)' : 'scale(0.95)'}
+        transition="all 0.3s ease-out"
       >
         <VStack spacing={6} align="stretch">
           {/* Logo / Header */}
           <Box textAlign="center">
-            <Heading size="xl" mb={2}>Blanco Studio</Heading>
-            <Text color="gray.600">Admin Cockpit</Text>
+            <img 
+              src="/logo.svg" 
+              alt="Blanco Studio" 
+              style={{ height: '150px', margin: '0 auto' }} 
+            />
           </Box>
 
           {/* Form */}

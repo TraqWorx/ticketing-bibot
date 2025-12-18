@@ -69,9 +69,19 @@ export const createClientUser = async (input: CreateUserInput): Promise<{ user: 
 };
 
 /**
- * Recupera lista utenti CLIENT (via API backend)
+ * Recupera lista utenti CLIENT con paginazione e filtri (via API backend)
  */
-export const getClientUsers = async (): Promise<User[]> => {
+export const getClientUsers = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}): Promise<{
+  users: User[];
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
+}> => {
   try {
     const token = await getAuthToken();
     
@@ -79,7 +89,13 @@ export const getClientUsers = async (): Promise<User[]> => {
       throw new Error('Autenticazione richiesta');
     }
 
-    const response = await fetch('/api/users/list', {
+    // Costruisci query string
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+
+    const response = await fetch(`/api/users/list?${queryParams.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -93,14 +109,59 @@ export const getClientUsers = async (): Promise<User[]> => {
     }
 
     // Converti le date da stringhe a oggetti Date
-    return data.users.map((user: any) => ({
+    const users = data.users.map((user: any) => ({
       ...user,
       createdAt: new Date(user.createdAt),
       updatedAt: new Date(user.updatedAt),
     }));
+
+    return {
+      users,
+      total: data.total,
+      page: data.page,
+      totalPages: data.totalPages,
+      limit: data.limit,
+    };
   } catch (error: any) {
     console.error('Error getting client users:', error);
     throw new Error(error.message || 'Errore durante il recupero dei clienti');
+  }
+};
+
+/**
+ * Aggiorna dati utente CLIENT (via API backend)
+ */
+export const updateUser = async (userId: string, data: { firstName: string; lastName: string; phone: string; ghl_contact_id: string }): Promise<User> => {
+  try {
+    const token = await getAuthToken();
+    
+    if (!token) {
+      throw new Error('Autenticazione richiesta');
+    }
+
+    const response = await fetch('/api/users/update', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userId, ...data }),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.error || 'Errore durante l\'aggiornamento del cliente');
+    }
+
+    return {
+      ...responseData.user,
+      createdAt: new Date(responseData.user.createdAt),
+      updatedAt: new Date(responseData.user.updatedAt),
+    };
+  } catch (error: any) {
+    console.error('Error updating user:', error);
+    throw new Error(error.message || 'Errore durante l\'aggiornamento del cliente');
   }
 };
 

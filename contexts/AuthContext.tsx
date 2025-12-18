@@ -27,6 +27,7 @@ interface AuthContextType {
   user: User | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
+  isLoggingOut: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -37,6 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Listen to Firebase Auth state
   useEffect(() => {
@@ -82,16 +84,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      setIsLoggingOut(true);
       await firebaseSignOut(auth);
       setUser(null);
       setFirebaseUser(null);
+      // Breve delay per smooth transition
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error: any) {
+      setIsLoggingOut(false);
       throw new Error(error.message || 'Logout failed');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, firebaseUser, loading, isLoggingOut, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

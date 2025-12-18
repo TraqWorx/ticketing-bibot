@@ -22,16 +22,18 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isLoggingOut } = useAuth();
   const router = useRouter();
 
-  // Show loading spinner
-  if (loading) {
+  // Show loading spinner during auth check or logout
+  if (loading || isLoggingOut) {
     return (
       <Center h="100vh" bg="gray.50">
         <VStack spacing={4}>
           <Spinner size="xl" color="black" />
-          <Text color="gray.600">Verifica autenticazione...</Text>
+          <Text color="gray.600">
+            {isLoggingOut ? 'Disconnessione in corso...' : 'Verifica autenticazione...'}
+          </Text>
         </VStack>
       </Center>
     );
