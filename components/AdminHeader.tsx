@@ -25,7 +25,7 @@ export const AdminHeader = () => {
             shadow="sm"
         >
             <Container maxW="full" py={3} px={6}>
-                <HStack spacing={4}>
+                <HStack gap={4}>
                     <Spacer />
                     <UserMenu userName="Admin User" userEmail="admin@blancostudio.com" />
                 </HStack>

@@ -95,9 +95,9 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
 
     return (
         <form onSubmit={handleSubmit}>
-            <VStack spacing={4} align="stretch">
+            <VStack gap={4} align="stretch">
                 {/* Nome e Cognome */}
-                <HStack spacing={4} align="start">
+                <HStack gap={4} align="start">
                     <Box flex={1}>
                         <Text fontSize="sm" fontWeight="medium" mb={1}>Nome</Text>
                         <Input
@@ -180,7 +180,7 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
                 </Box>
 
                 {/* Actions */}
-                <HStack spacing={3} justify="flex-end" pt={4}>
+                <HStack gap={3} justify="flex-end" pt={4}>
                     {onCancel && (
                         <Button variant="ghost" onClick={onCancel}>
                             Annulla

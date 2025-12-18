@@ -61,7 +61,7 @@ export const UsersTable = ({ users, onEdit, onDeleteUser }: UsersTableProps) => 
                 <Text fontSize="sm" color="gray.600">{user.ghl_contact_id}</Text>
               </Box>
               <Box as="td" p={3}>
-                <HStack spacing={2} justify="flex-end">
+                <HStack gap={2} justify="flex-end">
                   {onEdit && (
                     <IconButton
                       aria-label="Modifica utente"

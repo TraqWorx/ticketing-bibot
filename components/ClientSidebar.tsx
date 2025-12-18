@@ -50,7 +50,7 @@ const ClientSidebarContent = ({ onItemClick }: ClientSidebarContentProps) => {
             {/* Sezione: Support */}
             <Box mb={6}>
 
-                <VStack spacing={1} align="stretch">
+                <VStack gap={1} align="stretch">
                     {supportMenuItems.map((item) => {
                         const isActive = router.pathname.startsWith(item.path);
 
@@ -69,7 +69,7 @@ const ClientSidebarContent = ({ onItemClick }: ClientSidebarContentProps) => {
                                 transition="all 0.2s"
                                 onClick={() => handleNavigation(item.path)}
                             >
-                                <HStack spacing={3}>
+                                <HStack gap={3}>
                                     <Icon as={() => item.icon} boxSize={5} />
                                     <Text fontWeight="medium" fontSize="sm">{item.label}</Text>
                                 </HStack>

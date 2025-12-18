@@ -96,7 +96,7 @@ export default function TicketingPage() {
   }
 
   return (
-    <VStack align="stretch" spacing={6}>
+    <VStack align="stretch" gap={6}>
       {/* Header: Titolo + Actions */}
       <Flex justify="space-between" align="center">
         <Box>
@@ -111,7 +111,7 @@ export default function TicketingPage() {
           </Text>
         </Box>
         
-        <HStack spacing={3}>
+        <HStack gap={3}>
           <Button
             size="sm"
             variant="ghost"
@@ -162,14 +162,14 @@ export default function TicketingPage() {
       <Box overflowX="auto" pb={4}>
         <HStack
           align="stretch"
-          spacing={4}
+          gap={4}
           minW="fit-content"
         >
           {Object.entries(ticketsByStatus).map(([status, statusTickets]) => (
             <VStack
               key={status}
               align="stretch"
-              spacing={3}
+              gap={3}
               bg="gray.50"
               borderRadius="12px"
               p={4}
@@ -179,7 +179,7 @@ export default function TicketingPage() {
             >
               {/* Column Header */}
               <HStack justify="space-between" mb={2}>
-                <HStack spacing={2}>
+                <HStack gap={2}>
                   <Box
                     w="8px"
                     h="8px"
@@ -191,7 +191,7 @@ export default function TicketingPage() {
                     fontWeight="700"
                     color="gray.800"
                     textTransform="uppercase"
-                    letterSpacing="wide"
+                    lettergap="wide"
                   >
                     {statusLabels[status as TicketStatus]}
                   </Text>
@@ -224,7 +224,7 @@ export default function TicketingPage() {
               </HStack>
 
               {/* Tickets in questa colonna */}
-              <VStack align="stretch" spacing={3} overflowY="auto">
+              <VStack align="stretch" gap={3} overflowY="auto">
                 {statusTickets.length === 0 ? (
                   <Flex
                     justify="center"

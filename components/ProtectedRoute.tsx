@@ -29,7 +29,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (loading || isLoggingOut) {
     return (
       <Center h="100vh" bg="gray.50">
-        <VStack spacing={4}>
+        <VStack gap={4}>
           <Spinner size="xl" color="black" />
           <Text color="gray.600">
             {isLoggingOut ? 'Disconnessione in corso...' : 'Verifica autenticazione...'}

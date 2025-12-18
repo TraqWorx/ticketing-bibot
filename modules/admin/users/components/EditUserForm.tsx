@@ -83,7 +83,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
 
     return (
         <form onSubmit={handleSubmit}>
-            <VStack spacing={4} align="stretch">
+            <VStack gap={4} align="stretch">
                 {/* Client ID (readonly) */}
                 <Box>
                     <Text fontSize="sm" fontWeight="medium" mb={1} color="gray.600">Client ID</Text>
@@ -113,7 +113,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                 </Box>
 
                 {/* Nome e Cognome */}
-                <HStack spacing={4} align="start">
+                <HStack gap={4} align="start">
                     <Box flex={1}>
                         <Text fontSize="sm" fontWeight="medium" mb={1}>Nome</Text>
                         <Input
@@ -174,7 +174,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                 </Box>
 
                 {/* Actions */}
-                <HStack spacing={3} justify="flex-end" pt={4}>
+                <HStack gap={3} justify="flex-end" pt={4}>
                     {onCancel && (
                         <Button variant="ghost" onClick={onCancel}>
                             Annulla

@@ -148,7 +148,7 @@ export default function UsersManagementPage() {
   };
 
   return (
-    <VStack spacing={6} align="stretch">
+    <VStack gap={6} align="stretch">
       {/* Header */}
       <Box>
         <HStack justify="space-between" mb={2}>
@@ -201,7 +201,7 @@ export default function UsersManagementPage() {
         title="⚠️ Conferma Eliminazione"
         size="md"
       >
-        <VStack spacing={4} align="stretch">
+        <VStack gap={4} align="stretch">
           <Box bg="red.50" p={4} borderRadius="md" borderLeftWidth="4px" borderLeftColor="red.500">
             <Text fontWeight="bold" color="red.700" mb={2}>
               ATTENZIONE: Operazione irreversibile
@@ -209,14 +209,14 @@ export default function UsersManagementPage() {
             <Text fontSize="sm" color="gray.700" mb={3}>
               Stai per eliminare definitivamente il cliente <strong>"{deleteConfirm?.clientName}"</strong>.
             </Text>
-            <VStack align="start" spacing={1} fontSize="sm" color="gray.700">
+            <VStack align="start" gap={1} fontSize="sm" color="gray.700">
               <Text>• Eliminazione account Firebase</Text>
               <Text>• Eliminazione dati Firestore</Text>
               <Text>• Perdita di tutti i dati associati</Text>
             </VStack>
           </Box>
 
-          <HStack spacing={3} justify="flex-end" pt={2}>
+          <HStack gap={3} justify="flex-end" pt={2}>
             <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
               Annulla
             </Button>
@@ -238,7 +238,7 @@ export default function UsersManagementPage() {
           <Heading size="md">Lista Clienti ({totalUsers})</Heading>
           
           {/* Search Bar con Filtri */}
-          <HStack spacing={2}>
+          <HStack gap={2}>
             <Box
               as="select"
               size="sm"
@@ -319,7 +319,7 @@ export default function UsersManagementPage() {
                   Pagina {currentPage} di {totalPages}
                 </Text>
                 
-                <HStack spacing={2}>
+                <HStack gap={2}>
                   <Button
                     size="sm"
                     variant="ghost"

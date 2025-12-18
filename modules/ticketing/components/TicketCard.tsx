@@ -81,7 +81,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
         borderColor: 'gray.300',
       }}
     >
-      <VStack align="stretch" spacing={3}>
+      <VStack align="stretch" gap={3}>
         {/* Header: Titolo + More Actions */}
         <Flex justify="space-between" align="start">
           <Text
@@ -117,7 +117,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
 
         {/* Tags */}
         {ticket.tags && ticket.tags.length > 0 && (
-          <HStack spacing={2} flexWrap="wrap">
+          <HStack gap={2} flexWrap="wrap">
             {ticket.tags.slice(0, 3).map((tag, idx) => (
               <Badge
                 key={idx}
@@ -143,7 +143,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
         {/* Footer: Metadata + Assignee */}
         <Flex justify="space-between" align="center" pt={2}>
           {/* Left: Icons metadata */}
-          <HStack spacing={3} fontSize="xs" color="gray.500">
+          <HStack gap={3} fontSize="xs" color="gray.500">
             {/* Priority Indicator Dot */}
             <Box
               w="6px"
@@ -154,7 +154,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
 
             {/* Comments */}
             {(ticket.commentsCount ?? 0) > 0 && (
-              <HStack spacing={1}>
+              <HStack gap={1}>
                 <Icon as={FiMessageSquare} boxSize="14px" />
                 <Text>{ticket.commentsCount}</Text>
               </HStack>
@@ -162,7 +162,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
 
             {/* Attachments */}
             {(ticket.attachmentsCount ?? 0) > 0 && (
-              <HStack spacing={1}>
+              <HStack gap={1}>
                 <Icon as={FiPaperclip} boxSize="14px" />
                 <Text>{ticket.attachmentsCount}</Text>
               </HStack>
@@ -171,7 +171,7 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
             {/* Due Date */}
             {ticket.dueDate && (
               <HStack
-                spacing={1}
+                gap={1}
                 color={isOverdue ? 'red.500' : isDueSoon ? 'orange.500' : 'gray.500'}
                 fontWeight={isOverdue || isDueSoon ? '600' : 'normal'}
               >

@@ -65,20 +65,20 @@ const SidebarContent = ({ onItemClick }: SidebarContentProps) => {
     <Box py={4} px={3}>
       {/* Section: Features */}
       <Box mb={6}>
-        <HStack spacing={2} px={3} mb={3}>
+        <HStack gap={2} px={3} mb={3}>
           <Icon as={() => <FiGrid />} boxSize={4} color="gray.500" />
           <Text 
             fontSize="xs" 
             fontWeight="bold" 
             textTransform="uppercase" 
-            letterSpacing="wide"
+            lettergap="wide"
             color="gray.500"
           >
             Features
           </Text>
         </HStack>
         
-        <VStack spacing={1} align="stretch">
+        <VStack gap={1} align="stretch">
           {menuItems.map((item) => {
             const isActive = router.pathname === item.path;
             
@@ -97,7 +97,7 @@ const SidebarContent = ({ onItemClick }: SidebarContentProps) => {
                 transition="all 0.2s"
                 onClick={() => handleNavigation(item.path)}
               >
-                <HStack spacing={3}>
+                <HStack gap={3}>
                   <Icon as={() => item.icon} boxSize={5} />
                   <Text fontWeight="medium" fontSize="sm">{item.label}</Text>
                 </HStack>
@@ -136,7 +136,7 @@ export const DesktopSidebar = () => {
     >
       {/* Logo / Brand */}
       <Box p={6} borderBottom="1px" borderColor="gray.200">
-        <HStack spacing={3}>
+        <HStack gap={3}>
           <Box
             w={8}
             h={8}
@@ -191,7 +191,7 @@ export const MobileSidebar = () => {
           <Drawer.Content>
             <Drawer.Header borderBottom="1px" borderColor="gray.200">
               <Box display="flex" justifyContent="space-between" alignItems="center" w="full">
-                <HStack spacing={3}>
+                <HStack gap={3}>
                   <Box
                     w={8}
                     h={8}

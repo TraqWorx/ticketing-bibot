@@ -102,7 +102,7 @@ export const UserMenu = () => {
           py={2}
           zIndex={1000}
         >
-          <VStack spacing={0} align="stretch">
+          <VStack gap={0} align="stretch">
             {/* Logout */}
             <Box
               px={4}
@@ -112,7 +112,7 @@ export const UserMenu = () => {
               transition="all 0.2s"
               onClick={handleLogout}
             >
-              <HStack spacing={3}>
+              <HStack gap={3}>
                 <Box as={FiLogOut} color="red.500" />
                 <Text fontSize="sm" fontWeight="medium" color="red.600">
                   Logout

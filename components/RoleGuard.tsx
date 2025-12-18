@@ -47,7 +47,7 @@ export const RoleGuard = ({ children, allowedRoles }: RoleGuardProps) => {
   if (loading) {
     return (
       <Center h="100vh" bg="gray.50">
-        <VStack spacing={4}>
+        <VStack gap={4}>
           <Spinner size="xl" color="black" />
           <Text color="gray.600">Verifica permessi...</Text>
         </VStack>
@@ -59,7 +59,7 @@ export const RoleGuard = ({ children, allowedRoles }: RoleGuardProps) => {
   if (!user || !allowedRoles.includes(user.role)) {
     return (
       <Center h="100vh" bg="gray.50">
-        <VStack spacing={4}>
+        <VStack gap={4}>
           <Spinner size="xl" color="black" />
           <Text color="gray.600">Reindirizzamento...</Text>
         </VStack>

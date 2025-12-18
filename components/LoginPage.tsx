@@ -80,7 +80,7 @@ export const LoginPage = () => {
         transform={isVisible ? 'scale(1)' : 'scale(0.95)'}
         transition="all 0.3s ease-out"
       >
-        <VStack spacing={6} align="stretch">
+        <VStack gap={6} align="stretch">
           {/* Logo / Header */}
           <Box textAlign="center">
             <img 
@@ -92,7 +92,7 @@ export const LoginPage = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            <VStack spacing={4}>
+            <VStack gap={4}>
               {/* Email */}
               <Box w="full">
                 <Text fontSize="sm" fontWeight="medium" mb={1}>Email</Text>

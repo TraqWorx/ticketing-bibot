@@ -47,7 +47,7 @@ const AdminSidebarContent = ({ onItemClick }: AdminSidebarContentProps) => {
 
     return (
         <Box py={4} px={3}>
-            <VStack spacing={1} align="stretch">
+            <VStack gap={1} align="stretch">
                 {adminMenuItems.map((item) => {
                     const isActive = router.pathname.startsWith(item.path);
 
@@ -66,7 +66,7 @@ const AdminSidebarContent = ({ onItemClick }: AdminSidebarContentProps) => {
                             transition="all 0.2s"
                             onClick={() => handleNavigation(item.path)}
                         >
-                            <HStack spacing={3}>
+                            <HStack gap={3}>
                                 <Icon as={() => item.icon} boxSize={5} />
                                 <Text fontWeight="medium" fontSize="sm">{item.label}</Text>
                             </HStack>

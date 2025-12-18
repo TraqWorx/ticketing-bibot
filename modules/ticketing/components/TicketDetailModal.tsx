@@ -115,7 +115,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
             title="Dettaglio Ticket"
             size="2xl"
         >
-            <VStack align="stretch" spacing={6}>
+            <VStack align="stretch" gap={6}>
                 {/* Titolo */}
                 <Box>
                     <Text fontSize="2xl" fontWeight="700" color="gray.900" lineHeight="1.3" mb={2}>
@@ -127,7 +127,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                 </Box>
 
                 {/* Badges Status e Priority */}
-                <HStack spacing={3}>
+                <HStack gap={3}>
                     <Badge
                         bg={statusColors[ticket.status]}
                         color="white"
@@ -137,7 +137,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                         fontWeight="600"
                         fontSize="xs"
                         textTransform="uppercase"
-                        letterSpacing="0.5px"
+                        lettergap="0.5px"
                         boxShadow="sm"
                     >
                         {statusLabels[ticket.status]}
@@ -151,7 +151,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                         fontWeight="600"
                         fontSize="xs"
                         textTransform="uppercase"
-                        letterSpacing="0.5px"
+                        lettergap="0.5px"
                         boxShadow="sm"
                     >
                         {priorityLabels[ticket.priority]}
@@ -160,7 +160,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
 
                 {/* Metadata Bar */}
                 <HStack
-                    spacing={6}
+                    gap={6}
                     fontSize="sm"
                     color="gray.600"
                     bg="gray.50"
@@ -171,18 +171,18 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                     borderColor="gray.100"
                 >
                     {ticket.assignee && (
-                        <HStack spacing={2.5}>
+                        <HStack gap={2.5}>
                             <Icon as={FiUser} boxSize="16px" color="gray.500" />
                             <Text fontWeight="500">{ticket.assignee.name}</Text>
                         </HStack>
                     )}
                     {ticket.dueDate && (
-                        <HStack spacing={2.5}>
+                        <HStack gap={2.5}>
                             <Icon as={FiCalendar} boxSize="16px" color="gray.500" />
                             <Text fontWeight="500">{formatDate(ticket.dueDate)}</Text>
                         </HStack>
                     )}
-                    <HStack spacing={2.5}>
+                    <HStack gap={2.5}>
                         <Icon as={FiClock} boxSize="16px" color="gray.500" />
                         <Text fontWeight="500">Creato {formatDate(ticket.createdAt)}</Text>
                     </HStack>
@@ -190,7 +190,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
 
                 {/* Descrizione */}
                 <Box>
-                    <Text fontSize="xs" fontWeight="700" color="gray.500" mb={3} textTransform="uppercase" letterSpacing="0.5px">
+                    <Text fontSize="xs" fontWeight="700" color="gray.500" mb={3} textTransform="uppercase" lettergap="0.5px">
                         Descrizione
                     </Text>
                     <Box
@@ -209,12 +209,12 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
 
                 {/* Sezione Commenti */}
                 <Box pt={2}>
-                    <Text fontSize="xs" fontWeight="700" color="gray.500" mb={4} textTransform="uppercase" letterSpacing="0.5px">
+                    <Text fontSize="xs" fontWeight="700" color="gray.500" mb={4} textTransform="uppercase" lettergap="0.5px">
                         Attività e Commenti
                     </Text>
 
                     {/* Timeline Commenti */}
-                    <VStack align="stretch" spacing={4} mb={6}>
+                    <VStack align="stretch" gap={4} mb={6}>
                         {(!ticket.comments || ticket.comments.length === 0) ? (
                             <Box
                                 bg="gradient-to-br from-gray.50 to-gray.100"
@@ -231,7 +231,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                             </Box>
                         ) : (
                             ticket.comments.map((comment) => (
-                                <Flex key={comment.id} align="start" spacing={3}>
+                                <Flex key={comment.id} align="start" gap={3}>
                                     {/* Avatar */}
                                     <Flex
                                         align="center"
@@ -252,7 +252,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
 
                                     {/* Comment Content */}
                                     <Box flex={1}>
-                                        <HStack spacing={2} mb={1}>
+                                        <HStack gap={2} mb={1}>
                                             <Text fontSize="sm" fontWeight="600" color="gray.900">
                                                 {comment.author.name}
                                             </Text>
@@ -290,10 +290,10 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose, onAddComment }: Tic
                         borderWidth="1px"
                         borderColor="gray.100"
                     >
-                        <Text fontSize="xs" fontWeight="700" color="gray.500" mb={3} textTransform="uppercase" letterSpacing="0.5px">
+                        <Text fontSize="xs" fontWeight="700" color="gray.500" mb={3} textTransform="uppercase" lettergap="0.5px">
                             💭 Aggiungi un commento
                         </Text>
-                        <VStack align="stretch" spacing={3}>
+                        <VStack align="stretch" gap={3}>
                             <Textarea
                                 placeholder="Scrivi il tuo commento qui..."
                                 value={newComment}

@@ -13,7 +13,7 @@ export default function UnauthorizedPage() {
 
   return (
     <Center h="100vh" bg="gray.50">
-      <VStack spacing={6} textAlign="center" maxW="md" p={8}>
+      <VStack gap={6} textAlign="center" maxW="md" p={8}>
         <Box fontSize="6xl">🚫</Box>
         <Heading size="xl">Accesso Negato</Heading>
         <Text color="gray.600">

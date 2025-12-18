@@ -33,9 +33,9 @@ return (
       shadow="sm"
     >
       <Container maxW="full" py={3} px={6}>
-        <HStack spacing={4}>
+        <HStack gap={4}>
           {/* Logo / App Name */}
-          <HStack spacing={3}>
+          <HStack gap={3}>
             <Box
               w={10}
               h={10}
