@@ -20,7 +20,7 @@ import {
   Text
 } from '@chakra-ui/react';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
-import { User } from '@/types/user';
+import { User } from '@/types';
 
 interface UsersTableProps {
   users: User[];
@@ -42,7 +42,8 @@ export const UsersTable = ({ users, onEdit, onDeleteUser }: UsersTableProps) => 
       <Box as="table" width="100%" css={{ borderCollapse: 'collapse' }}>
         <Box as="thead" bg="gray.50" borderBottomWidth="1px">
           <Box as="tr">
-            <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">Client ID</Box>
+            <Box as="th" p={3} textAlign="center" fontSize="sm" fontWeight="semibold" width="60px">#</Box>
+            <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">ID</Box>
             <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">Nome</Box>
             <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">Email</Box>
             <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">Telefono</Box>
@@ -51,10 +52,13 @@ export const UsersTable = ({ users, onEdit, onDeleteUser }: UsersTableProps) => 
           </Box>
         </Box>
         <Box as="tbody">
-          {users.map((user) => (
+          {users.map((user, index) => (
             <Box as="tr" key={user.id} borderBottomWidth="1px" _hover={{ bg: 'gray.50' }}>
-              <Box as="td" p={3} fontWeight="medium">{user.client_id}</Box>
-              <Box as="td" p={3}>{`${user.firstName} ${user.lastName}`}</Box>
+              <Box as="td" p={3} textAlign="center" color="gray.500" fontSize="sm">{index + 1}</Box>
+              <Box as="td" p={3}>
+                <Text fontSize="xs" color="gray.600" fontFamily="mono">{user.id}</Text>
+              </Box>
+              <Box as="td" p={3} fontWeight="medium">{`${user.firstName} ${user.lastName}`}</Box>
               <Box as="td" p={3}>{user.email}</Box>
               <Box as="td" p={3}>{user.phone}</Box>
               <Box as="td" p={3}>

@@ -14,24 +14,29 @@
 
 import { Box, Badge, Text, HStack, VStack, Flex, Icon } from '@chakra-ui/react';
 import { FiMessageSquare, FiPaperclip, FiCalendar, FiMoreVertical } from 'react-icons/fi';
-import { Ticket } from '../types';
+import { Ticket, TicketStatus } from '../types';
 
 interface TicketCardProps {
   ticket: Ticket;
   onClick?: () => void;
+  index?: number;
 }
 
-export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
-  const priorityBorderColors: Record<string, string> = {
-    low: 'gray.300',
-    medium: 'yellow.400',
-    high: 'orange.400',
-    urgent: 'red.500',
+export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
+  // Colore bordo basato su status dalle sezioni Asana
+  const getStatusBorderColor = () => {
+    if (ticket.status === TicketStatus.RESOLVED || ticket.status === TicketStatus.CLOSED) {
+      return 'green.400';
+    }
+    if (ticket.status === TicketStatus.IN_PROGRESS) {
+      return 'orange.400';
+    }
+    return 'blue.400';
   };
 
   const priorityIndicatorColors: Record<string, string> = {
     low: 'gray.400',
-    medium: 'yellow.500',
+    medium: 'green.500',
     high: 'orange.500',
     urgent: 'red.600',
   };
@@ -66,92 +71,56 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
   return (
     <Box
       bg="white"
-      borderRadius="10px"
+      borderRadius="8px"
       borderWidth="1px"
       borderColor="gray.200"
       borderLeftWidth="3px"
-      borderLeftColor={priorityBorderColors[ticket.priority]}
-      p={4}
+      borderLeftColor={getStatusBorderColor()}
+      p={3}
       cursor="pointer"
       onClick={onClick}
       transition="all 0.2s"
       _hover={{
-        shadow: 'lg',
-        transform: 'translateY(-2px)',
+        shadow: 'md',
         borderColor: 'gray.300',
+        bg: 'gray.50'
       }}
     >
-      <VStack align="stretch" gap={3}>
-        {/* Header: Titolo + More Actions */}
-        <Flex justify="space-between" align="start">
-          <Text
-            fontSize="sm"
-            fontWeight="600"
-            color="gray.800"
-            lineClamp={2}
-            flex={1}
-            lineHeight="1.4"
-          >
-            {ticket.title}
-          </Text>
-          <Icon
-            as={FiMoreVertical}
-            color="gray.400"
-            cursor="pointer"
-            ml={2}
-            _hover={{ color: 'gray.600' }}
-          />
-        </Flex>
-
-        {/* Description (se presente) */}
-        {ticket.description && (
-          <Text
-            fontSize="xs"
+      <Flex align="center" gap={3}>
+        {/* Numero progressivo */}
+        {index !== undefined && (
+          <Flex
+            align="center"
+            justify="center"
+            minW="32px"
+            h="32px"
+            borderRadius="md"
+            bg="gray.100"
             color="gray.600"
-            lineClamp={2}
-            lineHeight="1.5"
+            fontSize="xs"
+            fontWeight="700"
           >
-            {ticket.description}
-          </Text>
+            #{index + 1}
+          </Flex>
         )}
 
-        {/* Tags */}
-        {ticket.tags && ticket.tags.length > 0 && (
-          <HStack gap={2} flexWrap="wrap">
-            {ticket.tags.slice(0, 3).map((tag, idx) => (
-              <Badge
-                key={idx}
-                fontSize="10px"
-                px={2}
-                py={0.5}
-                borderRadius="full"
-                bg="gray.100"
-                color="gray.700"
-                fontWeight="500"
-              >
-                {tag}
-              </Badge>
-            ))}
-            {ticket.tags.length > 3 && (
-              <Text fontSize="10px" color="gray.500">
-                +{ticket.tags.length - 3}
-              </Text>
-            )}
-          </HStack>
-        )}
+        {/* Contenuto principale */}
+        <Flex flex="1" align="center" gap={4} minW="0">
+          {/* Titolo e descrizione */}
+          <Box flex="1" minW="0">
+            <Text
+              fontSize="sm"
+              fontWeight="600"
+              color="gray.800"
+              noOfLines={1}
+              mb={1}
+            >
+              {ticket.title}
+            </Text>
+          </Box>
 
-        {/* Footer: Metadata + Assignee */}
-        <Flex justify="space-between" align="center" pt={2}>
-          {/* Left: Icons metadata */}
-          <HStack gap={3} fontSize="xs" color="gray.500">
-            {/* Priority Indicator Dot */}
-            <Box
-              w="6px"
-              h="6px"
-              borderRadius="full"
-              bg={priorityIndicatorColors[ticket.priority]}
-            />
-
+          {/* Metadata compatta */}
+          <HStack gap={4} fontSize="xs" color="gray.500" flexShrink={0}>
             {/* Comments */}
             {(ticket.commentsCount ?? 0) > 0 && (
               <HStack gap={1}>
@@ -179,26 +148,26 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
                 <Text fontSize="10px">{formatDate(ticket.dueDate)}</Text>
               </HStack>
             )}
-          </HStack>
 
-          {/* Right: Assignee Avatar */}
-          {ticket.assignee && (
-            <Flex
-              align="center"
-              justify="center"
-              w="24px"
-              h="24px"
-              borderRadius="full"
-              bg="black"
-              color="white"
-              fontSize="10px"
-              fontWeight="600"
-            >
-              {getInitials(ticket.assignee.name)}
-            </Flex>
-          )}
+            {/* Assignee Avatar */}
+            {ticket.assignee && (
+              <Flex
+                align="center"
+                justify="center"
+                w="24px"
+                h="24px"
+                borderRadius="full"
+                bg="black"
+                color="white"
+                fontSize="10px"
+                fontWeight="600"
+              >
+                {getInitials(ticket.assignee.name)}
+              </Flex>
+            )}
+          </HStack>
         </Flex>
-      </VStack>
+      </Flex>
     </Box>
   );
 };

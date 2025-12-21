@@ -9,7 +9,7 @@
 
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { RoleGuard } from '@/components/RoleGuard';
-import { UserRole } from '@/types/user';
+import { UserRole } from '@/types';
 import UsersManagementPage from '@/modules/admin/users/pages';
 
 export default function AdminUsersPage() {

@@ -161,7 +161,7 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
                     <Input
                         value={formData.ghl_contact_id}
                         onChange={(e) => setFormData({ ...formData, ghl_contact_id: e.target.value })}
-                        placeholder="ghl-contact-123456"
+                        placeholder="esempio: tVzupNVXBYywRntrWQVX"
                         borderColor={errors.ghl_contact_id ? 'red.500' : 'gray.200'}
                     />
                     <Text fontSize="xs" color="gray.600" mt={1}>

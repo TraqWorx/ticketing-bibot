@@ -1,5 +1,5 @@
 /**
- * ROUTE: /client/ticketing
+ * ROUTE: /clienti/ticketing
  * 
  * Pagina Ticketing per CLIENT
  * 
@@ -11,7 +11,7 @@
 
 import { ClientLayout } from '@/layouts/ClientLayout';
 import { RoleGuard } from '@/components/RoleGuard';
-import { UserRole } from '@/types/user';
+import { UserRole } from '@/types';
 import TicketingPage from '@/modules/ticketing/pages';
 
 export default function ClientTicketingPage() {

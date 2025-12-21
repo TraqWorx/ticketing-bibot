@@ -12,7 +12,7 @@ export default function ClientRoot() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/client/ticketing');
+    router.push('/clienti/ticketing');
   }, [router]);
 
   return (

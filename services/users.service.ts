@@ -43,24 +43,16 @@ export const createClientUser = async (input: CreateUserInput): Promise<{ user: 
       throw new Error('Autenticazione richiesta');
     }
 
-    const response = await fetch('/api/users/create', {
-      method: 'POST',
+    const axios = require('axios');
+    const response = await axios.post('/api/users/create', input, {
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(input),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Errore durante la creazione del cliente');
-    }
-
     return {
-      user: data.user,
-      message: data.message,
+      user: response.data.user,
+      message: response.data.message,
     };
   } catch (error: any) {
     console.error('Error creating user:', error);
@@ -95,21 +87,15 @@ export const getClientUsers = async (params?: {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.search) queryParams.append('search', params.search);
 
-    const response = await fetch(`/api/users/list?${queryParams.toString()}`, {
-      method: 'GET',
+    const axios = require('axios');
+    const response = await axios.get(`/api/users/list?${queryParams.toString()}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Errore durante il recupero dei clienti');
-    }
-
     // Converti le date da stringhe a oggetti Date
-    const users = data.users.map((user: any) => ({
+    const users = response.data.users.map((user: any) => ({
       ...user,
       createdAt: new Date(user.createdAt),
       updatedAt: new Date(user.updatedAt),
@@ -117,10 +103,10 @@ export const getClientUsers = async (params?: {
 
     return {
       users,
-      total: data.total,
-      page: data.page,
-      totalPages: data.totalPages,
-      limit: data.limit,
+      total: response.data.total,
+      page: response.data.page,
+      totalPages: response.data.totalPages,
+      limit: response.data.limit,
     };
   } catch (error: any) {
     console.error('Error getting client users:', error);
@@ -139,25 +125,20 @@ export const updateUser = async (userId: string, data: { firstName: string; last
       throw new Error('Autenticazione richiesta');
     }
 
-    const response = await fetch('/api/users/update', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ userId, ...data }),
-    });
-
-    const responseData = await response.json();
-
-    if (!response.ok) {
-      throw new Error(responseData.error || 'Errore durante l\'aggiornamento del cliente');
-    }
+    const axios = require('axios');
+    const response = await axios.put('/api/users/update', 
+      { userId, ...data },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
 
     return {
-      ...responseData.user,
-      createdAt: new Date(responseData.user.createdAt),
-      updatedAt: new Date(responseData.user.updatedAt),
+      ...response.data.user,
+      createdAt: new Date(response.data.user.createdAt),
+      updatedAt: new Date(response.data.user.updatedAt),
     };
   } catch (error: any) {
     console.error('Error updating user:', error);
@@ -177,20 +158,13 @@ export const deleteUser = async (userId: string): Promise<void> => {
       throw new Error('Autenticazione richiesta');
     }
 
-    const response = await fetch('/api/users/delete', {
-      method: 'DELETE',
+    const axios = require('axios');
+    await axios.delete('/api/users/delete', {
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ userId }),
+      data: { userId },
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Errore durante l\'eliminazione del cliente');
-    }
   } catch (error: any) {
     console.error('Error deleting user:', error);
     throw new Error(error.message || 'Errore durante l\'eliminazione del cliente');

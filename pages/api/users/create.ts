@@ -11,7 +11,7 @@
 import { NextApiResponse } from 'next';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/auth-middleware';
 import { adminAuth, adminDb } from '@/config/firebase-admin';
-import { UserRole } from '@/types/user';
+import { UserRole } from '@/types';
 
 interface CreateUserBody {
   email: string;
@@ -19,31 +19,6 @@ interface CreateUserBody {
   lastName: string;
   phone: string;
   ghl_contact_id: string;
-}
-
-// Genera client_id univoco
-async function generateClientId(): Promise<string> {
-  try {
-    const usersRef = adminDb.collection('users');
-    const snapshot = await usersRef.where('role', '==', UserRole.CLIENT).get();
-    
-    let maxNumber = 0;
-    snapshot.forEach((doc) => {
-      const clientId = doc.data().client_id;
-      if (clientId && clientId.startsWith('CLT-')) {
-        const number = parseInt(clientId.substring(4));
-        if (number > maxNumber) {
-          maxNumber = number;
-        }
-      }
-    });
-    
-    const newNumber = maxNumber + 1;
-    return `CLT-${newNumber.toString().padStart(5, '0')}`;
-  } catch (error) {
-    const randomNum = Math.floor(Math.random() * 99999);
-    return `CLT-${randomNum.toString().padStart(5, '0')}`;
-  }
 }
 
 // Invia email tramite Firebase Auth (sistema integrato)
@@ -59,25 +34,14 @@ async function sendPasswordSetupEmail(email: string): Promise<void> {
   }
 
   try {
-    const response = await fetch(
+    const axios = require('axios');
+    await axios.post(
       `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          requestType: 'PASSWORD_RESET',
-          email: email,
-        }),
+        requestType: 'PASSWORD_RESET',
+        email: email,
       }
     );
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Firebase email send error:', error);
-      throw new Error('Errore invio email');
-    }
 
     console.log(`✅ Email di reset password inviata a: ${email}`);
   } catch (error) {
@@ -102,10 +66,7 @@ async function handler(
       return res.status(400).json({ error: 'Campi obbligatori mancanti' });
     }
 
-    // 1. Genera client_id
-    const client_id = await generateClientId();
-
-    // 2. Crea utente in Firebase Auth (SENZA password)
+    // 1. Crea utente in Firebase Auth (SENZA password)
     // La password verrà impostata dall'utente tramite link reset
     const userRecord = await adminAuth.createUser({
       email,
@@ -113,13 +74,12 @@ async function handler(
       emailVerified: false,
     });
 
-    // 3. Set custom claims per ruolo
+    // 2. Set custom claims per ruolo
     await adminAuth.setCustomUserClaims(userRecord.uid, { role: UserRole.CLIENT });
 
-    // 4. Salva dati in Firestore
+    // 3. Salva dati in Firestore
     const userData = {
       id: userRecord.uid,
-      client_id,
       ghl_contact_id: ghl_contact_id || '',
       email,
       firstName,

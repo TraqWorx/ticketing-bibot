@@ -4,10 +4,9 @@
  * Modello dati utente per sistema multi-tenant
  * 
  * Campi:
- * - client_id: ID interno generato
+ * - id: Firebase UID (identificativo univoco)
  * - ghl_contact_id: ID GoHighLevel per sincronizzazione
- * - Firebase UID per autenticazione
- * - Role per autorizzazione
+ * - role: Ruolo per autorizzazione
  */
 
 import { UserRole } from './roles';
@@ -17,7 +16,6 @@ export { UserRole } from './roles';
 
 export interface User {
   id: string; // Firebase UID
-  client_id: string; // ID interno generato (CLT-XXXXX)
   ghl_contact_id: string; // GoHighLevel Contact ID
   email: string;
   firstName: string;

@@ -5,14 +5,14 @@
  * 
  * Logic:
  * - ADMIN → /admin/users
- * - CLIENT → /client/ticketing
+ * - CLIENT → /clienti/ticketing
  */
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Center, Spinner, VStack, Text } from '@chakra-ui/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types/user';
+import { UserRole } from '@/types';
 
 export default function Home() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export default function Home() {
       if (user.role === UserRole.ADMIN) {
         router.push('/admin/users');
       } else if (user.role === UserRole.CLIENT) {
-        router.push('/client/ticketing');
+        router.push('/clienti/ticketing');
       }
     }
   }, [user, loading, router]);

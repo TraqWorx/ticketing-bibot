@@ -11,7 +11,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { withAdminAuth } from '@/lib/auth-middleware';
 import { adminDb } from '@/config/firebase-admin';
-import { UserRole } from '@/types/user';
+import { UserRole } from '@/types';
 
 interface UpdateUserRequest {
   userId: string;

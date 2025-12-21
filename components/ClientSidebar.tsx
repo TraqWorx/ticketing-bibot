@@ -29,7 +29,7 @@ const supportMenuItems: MenuItem[] = [
     {
         label: 'Ticketing',
         icon: <FiFileText />,
-        path: '/client/ticketing',
+        path: '/clienti/ticketing',
     },
 ];
 

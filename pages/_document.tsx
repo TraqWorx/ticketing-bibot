@@ -10,6 +10,9 @@ export default function Document() {
   return (
     <Html lang="it">
       <Head>
+        <title>Blanco Studio</title>
+        <meta name="description" content="Blanco Studio Admin Cockpit" />
+        <link rel="icon" href="/logo-icon.ico" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

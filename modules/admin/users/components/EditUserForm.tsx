@@ -11,7 +11,6 @@
  * 
  * Campi NON modificabili (readonly):
  * - Email
- * - Client ID
  * 
  * Pattern: Componente controllato con validazioni
  */
@@ -26,7 +25,7 @@ import {
     Text,
 } from '@chakra-ui/react';
 import { toast } from 'react-toastify';
-import { User } from '@/types/user';
+import { User } from '@/types';
 
 interface EditUserFormProps {
     user: User;
@@ -84,18 +83,6 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
     return (
         <form onSubmit={handleSubmit}>
             <VStack gap={4} align="stretch">
-                {/* Client ID (readonly) */}
-                <Box>
-                    <Text fontSize="sm" fontWeight="medium" mb={1} color="gray.600">Client ID</Text>
-                    <Input
-                        value={user.client_id}
-                        readOnly
-                        bg="gray.100"
-                        color="gray.600"
-                        cursor="not-allowed"
-                    />
-                </Box>
-
                 {/* Email (readonly) */}
                 <Box>
                     <Text fontSize="sm" fontWeight="medium" mb={1} color="gray.600">Email</Text>
@@ -108,7 +95,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                         cursor="not-allowed"
                     />
                     <Text fontSize="xs" color="gray.500" mt={1}>
-                        Email e Client ID non sono modificabili
+                        L'email non è modificabile
                     </Text>
                 </Box>
 
@@ -162,7 +149,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                     <Input
                         value={formData.ghl_contact_id}
                         onChange={(e) => setFormData({ ...formData, ghl_contact_id: e.target.value })}
-                        placeholder="ghl-contact-123456"
+                        placeholder="esempio: tVzupNVXBYywRntrWQVX"
                         borderColor={errors.ghl_contact_id ? 'red.500' : 'gray.200'}
                     />
                     <Text fontSize="xs" color="gray.600" mt={1}>

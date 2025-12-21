@@ -96,7 +96,7 @@ export default function UsersManagementPage() {
       const { user, message } = await createClientUser(data);
       
       toast.success(
-        `✅ ${message}\nClient ID: ${user.client_id}\nEmail: ${user.email}`,
+        `✅ ${message}\nEmail: ${user.email}`,
         { autoClose: 8000 }
       );
       setIsModalOpen(false);

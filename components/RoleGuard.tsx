@@ -15,7 +15,7 @@ import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Center, Spinner, VStack, Text } from '@chakra-ui/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types/user';
+import { UserRole } from '@/types';
 
 interface RoleGuardProps {
   children: ReactNode;
@@ -35,7 +35,7 @@ export const RoleGuard = ({ children, allowedRoles }: RoleGuardProps) => {
         if (user.role === UserRole.ADMIN) {
           router.push('/admin/users');
         } else if (user.role === UserRole.CLIENT) {
-          router.push('/client/ticketing');
+          router.push('/clienti/ticketing');
         } else {
           router.push('/unauthorized');
         }
