@@ -180,7 +180,7 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess }: CreateTicketMo
   // Handler chiusura modale
   const handleClose = () => {
     if (!isSubmitting) {
-      setFormData({ title: '', description: '' });
+      setFormData({ title: '', description: '', priority: 'medium' });
       setAttachments([]);
       onClose();
     }
@@ -219,29 +219,27 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess }: CreateTicketMo
                 <Text fontSize="sm" fontWeight="600" color="gray.700" mb={2}>
                   Priorità <Text as="span" color="red.500">*</Text>
                 </Text>
-                <Box
-                  as="select"
-                  name="priority"
+                <select
                   value={formData.priority}
-                  onChange={(e: any) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
+                  onChange={(e: any) => setFormData(prev => ({ ...prev, priority: e.target.value as 'high' | 'medium' | 'low' | 'none' }))}
                   disabled={isSubmitting}
-                  w="full"
-                  px={3}
-                  py={2}
-                  borderRadius="md"
-                  borderWidth="1px"
-                  borderColor="gray.200"
-                  fontSize="sm"
-                  _hover={{ borderColor: 'gray.300' }}
-                  _focus={{ borderColor: 'black', outline: 'none', boxShadow: '0 0 0 1px black' }}
-                  _disabled={{ opacity: 0.6, cursor: 'not-allowed' }}
-                  cursor="pointer"
-                  bg="white"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #CBD5E0',
+                    fontSize: '14px',
+                    backgroundColor: 'white',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    opacity: isSubmitting ? 0.6 : 1,
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#A0AEC0'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = '#CBD5E0'}
                 >
                   <option value="low">Bassa</option>
                   <option value="medium">Media</option>
                   <option value="high">Alta</option>
-                </Box>
+                </select>
               </Box>
 
               {/* Titolo */}

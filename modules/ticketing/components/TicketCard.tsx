@@ -112,7 +112,7 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
               fontSize="sm"
               fontWeight="600"
               color="gray.800"
-              noOfLines={1}
+              truncate
               mb={1}
             >
               {ticket.title}
@@ -121,19 +121,12 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
 
           {/* Metadata compatta */}
           <HStack gap={4} fontSize="xs" color="gray.500" flexShrink={0}>
+
             {/* Comments */}
             {(ticket.commentsCount ?? 0) > 0 && (
               <HStack gap={1}>
                 <Icon as={FiMessageSquare} boxSize="14px" />
                 <Text>{ticket.commentsCount}</Text>
-              </HStack>
-            )}
-
-            {/* Attachments */}
-            {(ticket.attachmentsCount ?? 0) > 0 && (
-              <HStack gap={1}>
-                <Icon as={FiPaperclip} boxSize="14px" />
-                <Text>{ticket.attachmentsCount}</Text>
               </HStack>
             )}
 

@@ -369,9 +369,11 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                         fontSize="xs"
                                         fontWeight="600"
                                         onClick={() => setIsDescriptionExpanded(true)}
-                                        rightIcon={<Icon as={FiChevronRight} transform="rotate(90deg)" />}
                                     >
-                                        Mostra tutto
+                                        <HStack gap={1}>
+                                            <Text>Mostra tutto</Text>
+                                            <Icon as={FiChevronRight} transform="rotate(90deg)" />
+                                        </HStack>
                                     </Button>
                                 </Flex>
                             )}
@@ -386,9 +388,11 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                         fontSize="xs"
                                         fontWeight="600"
                                         onClick={() => setIsDescriptionExpanded(false)}
-                                        rightIcon={<Icon as={FiChevronRight} transform="rotate(-90deg)" />}
                                     >
-                                        Riduci
+                                        <HStack gap={1}>
+                                            <Text>Riduci</Text>
+                                            <Icon as={FiChevronRight} transform="rotate(-90deg)" />
+                                        </HStack>
                                     </Button>
                                 </Flex>
                             )}

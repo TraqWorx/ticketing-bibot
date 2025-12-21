@@ -48,6 +48,14 @@ export interface AsanaUser {
   resource_type: string;
 }
 
+export interface AsanaAttachment {
+  gid: string;
+  name: string;
+  url: string;
+  created_at: string;
+  resource_type: string;
+}
+
 export interface AsanaMembership {
   project: {
     gid: string;
@@ -78,6 +86,7 @@ export interface AsanaTaskDetail {
   actual_time_minutes: number | null;
   assignee: AsanaUser | null;
   assignee_status: string;
+  attachments?: AsanaAttachment[];
   completed: boolean;
   completed_at: string | null;
   created_at: string;

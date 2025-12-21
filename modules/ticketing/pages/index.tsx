@@ -351,7 +351,7 @@ export default function TicketingPage() {
         ) : (
           <Flex gap={4} align="flex-start">
             {/* Colonna Aperti */}
-            {statusFilters.open && (() => {
+            {statusFilters.open ? (() => {
               const openTickets = filteredTickets.filter(t => t.status === TicketStatus.OPEN);
               const totalPages = getTotalPages('open', openTickets.length);
               const currentPage = pagination.open.currentPage;
@@ -397,7 +397,7 @@ export default function TicketingPage() {
                         <Button
                           size="xs"
                           variant="ghost"
-                          isDisabled={currentPage === 1}
+                          disabled={currentPage === 1}
                           onClick={() => setPage('open', currentPage - 1)}
                         >
                           <Icon as={FiChevronLeft} />
@@ -416,7 +416,7 @@ export default function TicketingPage() {
                         <Button
                           size="xs"
                           variant="ghost"
-                          isDisabled={currentPage === totalPages}
+                          disabled={currentPage === totalPages}
                           onClick={() => setPage('open', currentPage + 1)}
                         >
                           <Icon as={FiChevronRight} />
@@ -426,10 +426,10 @@ export default function TicketingPage() {
                   </VStack>
                 </Box>
               );
-            })()}
+            })() : null}
 
             {/* Colonna In Lavorazione */}
-            {statusFilters.inProgress && (() => {
+            {statusFilters.inProgress ? (() => {
               const inProgressTickets = filteredTickets.filter(t => t.status === TicketStatus.IN_PROGRESS);
               const totalPages = getTotalPages('inProgress', inProgressTickets.length);
               const currentPage = pagination.inProgress.currentPage;
@@ -475,7 +475,7 @@ export default function TicketingPage() {
                         <Button
                           size="xs"
                           variant="ghost"
-                          isDisabled={currentPage === 1}
+                          disabled={currentPage === 1}
                           onClick={() => setPage('inProgress', currentPage - 1)}
                         >
                           <Icon as={FiChevronLeft} />
@@ -494,7 +494,7 @@ export default function TicketingPage() {
                         <Button
                           size="xs"
                           variant="ghost"
-                          isDisabled={currentPage === totalPages}
+                          disabled={currentPage === totalPages}
                           onClick={() => setPage('inProgress', currentPage + 1)}
                         >
                           <Icon as={FiChevronRight} />
@@ -504,10 +504,10 @@ export default function TicketingPage() {
                   </VStack>
                 </Box>
               );
-            })()}
+            })() : null}
 
             {/* Colonna Completati - visualizzazione normale */}
-            {statusFilters.completed && !statusFilters.open && !statusFilters.inProgress && (() => {
+            {statusFilters.completed && !statusFilters.open && !statusFilters.inProgress ? (() => {
               const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED);
               const totalPages = getTotalPages('completed', completedTickets.length);
               const currentPage = pagination.completed.currentPage;
@@ -539,7 +539,7 @@ export default function TicketingPage() {
                         <Button
                           size="xs"
                           variant="ghost"
-                          isDisabled={currentPage === 1}
+                          disabled={currentPage === 1}
                           onClick={() => setPage('completed', currentPage - 1)}
                         >
                           <Icon as={FiChevronLeft} />
@@ -558,7 +558,7 @@ export default function TicketingPage() {
                         <Button
                           size="xs"
                           variant="ghost"
-                          isDisabled={currentPage === totalPages}
+                          disabled={currentPage === totalPages}
                           onClick={() => setPage('completed', currentPage + 1)}
                         >
                           <Icon as={FiChevronRight} />
@@ -568,10 +568,10 @@ export default function TicketingPage() {
                   </VStack>
                 </Box>
               );
-            })()}
+            })() : null}
 
             {/* Se solo completati è attivo, mostra lista semplice */}
-            {statusFilters.completed && (statusFilters.open || statusFilters.inProgress) && (() => {
+            {statusFilters.completed && (statusFilters.open || statusFilters.inProgress) ? (() => {
               const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED);
               const totalPages = getTotalPages('completed', completedTickets.length);
               const currentPage = pagination.completed.currentPage;
@@ -603,7 +603,7 @@ export default function TicketingPage() {
                         <Button
                           size="xs"
                           variant="ghost"
-                          isDisabled={currentPage === 1}
+                          disabled={currentPage === 1}
                           onClick={() => setPage('completed', currentPage - 1)}
                         >
                           <Icon as={FiChevronLeft} />
@@ -622,7 +622,7 @@ export default function TicketingPage() {
                         <Button
                           size="xs"
                           variant="ghost"
-                          isDisabled={currentPage === totalPages}
+                          disabled={currentPage === totalPages}
                           onClick={() => setPage('completed', currentPage + 1)}
                         >
                           <Icon as={FiChevronRight} />
@@ -632,7 +632,7 @@ export default function TicketingPage() {
                   </VStack>
                 </Box>
               );
-            })()}
+            })() : null}
           </Flex>
         )}
       </Box>
