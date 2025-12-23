@@ -26,17 +26,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'User ID non valido' });
     }
 
-    console.log('[user-tasks] Richiesta con:', { userId });
-
     // Recupera task da Asana
     const result = await getUserTasks(userId);
-
-    console.log('[user-tasks] Risultato ricevuto:', { count: result?.data?.length || 0 });
-    
-    // Log del primo task per vedere i campi disponibili
-    if (result?.data && result.data.length > 0) {
-      console.log('[user-tasks] Primo task completo:', JSON.stringify(result.data[0], null, 2));
-    }
 
     // Risposta successo
     return res.status(200).json(result);

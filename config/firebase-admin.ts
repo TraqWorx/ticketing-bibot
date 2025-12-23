@@ -25,8 +25,6 @@ if (!admin.apps.length) {
       }),
       databaseURL: `https://${process.env.FIREBASE_ADMIN_PROJECT_ID}.firebaseio.com`,
     });
-    
-    console.log('✅ Firebase Admin initialized');
   } catch (error) {
     console.error('❌ Firebase Admin initialization error:', error);
   }

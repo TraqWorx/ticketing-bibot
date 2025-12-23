@@ -51,9 +51,6 @@ export const useTickets = () => {
       const axios = require('axios');
       const response = await axios.get(`/api/asana/user-tasks?userId=${user.id}`);
       
-      console.log('[useTickets] Response status:', response.status);
-      console.log('[useTickets] Risultato ricevuto:', { count: response.data?.data?.length || 0 });
-      
       // Mappa i task Asana al formato Ticket locale
       const asanaTasks: AsanaTaskListItem[] = response.data.data || [];
       const mappedTickets: Ticket[] = asanaTasks.map((task) => {

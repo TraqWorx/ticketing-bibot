@@ -55,9 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // STEP 1: Crea commento su Asana
-    console.log('[create-story] Creazione commento:', { taskGid, textLength: text.length });
     const result = await createTaskStory(taskGid, text);
-    console.log('[create-story] Commento creato');
 
     let attachmentsUploaded = 0;
     let totalAttachments = 0;
@@ -69,15 +67,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         : [files.attachments];
 
       totalAttachments = attachmentFiles.length;
-      console.log('[create-story] Trovati', totalAttachments, 'allegati da caricare');
 
       for (const file of attachmentFiles) {
         try {
-          console.log('[create-story] Upload allegato:', file.originalFilename);
-          
           // Leggi file da temp path
           const fileBuffer = await fs.readFile(file.filepath);
-          console.log('[create-story] File letto, dimensione:', fileBuffer.length, 'bytes');
 
           // Upload su Asana
           await uploadAsanaAttachment(
@@ -88,7 +82,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           );
           
           attachmentsUploaded++;
-          console.log('[create-story] Allegato caricato con successo:', file.originalFilename);
 
           // Elimina file temporaneo
           await fs.unlink(file.filepath).catch(() => {});
@@ -97,8 +90,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Continua con gli altri file anche se uno fallisce
         }
       }
-      
-      console.log('[create-story] Upload completato:', attachmentsUploaded, 'su', totalAttachments);
     }
 
     return res.status(200).json({

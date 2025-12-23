@@ -22,7 +22,9 @@ import {
   Button,
   Text,
   Center,
+  IconButton,
 } from '@chakra-ui/react';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
@@ -35,6 +37,7 @@ export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Fade-in animation per evitare glitch
   useEffect(() => {
@@ -108,13 +111,28 @@ export const LoginPage = () => {
               {/* Password */}
               <Box w="full">
                 <Text fontSize="sm" fontWeight="medium" mb={1}>Password</Text>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  size="lg"
-                />
+                <Box position="relative">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    size="lg"
+                    pr="12"
+                  />
+                  <IconButton
+                    position="absolute"
+                    right="2"
+                    top="50%"
+                    transform="translateY(-50%)"
+                    aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
+                    onClick={() => setShowPassword(!showPassword)}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </IconButton>
+                </Box>
               </Box>
 
               {/* Submit Button */}

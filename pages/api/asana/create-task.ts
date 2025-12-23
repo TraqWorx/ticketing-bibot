@@ -13,7 +13,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { IncomingForm, File } from 'formidable';
 import { createAsanaTask, uploadAsanaAttachment } from '@/lib/asana/asanaService';
-import { sendWhatsAppMessage } from '@/lib/ghl/ghlService';
+import { sendMessage } from '@/lib/ghl/ghlService';
 import { getClientTicketCreatedMessage, getAdminTicketCreatedMessage } from '@/lib/ghl/messages';
 import fs from 'fs/promises';
 
@@ -75,8 +75,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Crea task su Asana (STEP 1)
-    console.log('[create-task] Creazione task Asana:', { title, priority, creatorId });
-    
     const taskResult = await createAsanaTask({
       name: title,
       notes: description,
@@ -88,7 +86,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // STEP 2: Estrai il task_gid dalla risposta
     const taskGid = taskResult.data.gid;
-    console.log('[create-task] Task creato con GID:', taskGid);
     
     let attachmentsUploaded = 0;
     let totalAttachments = 0;
@@ -100,15 +97,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         : [files.attachments];
 
       totalAttachments = attachmentFiles.length;
-      console.log('[create-task] Trovati', totalAttachments, 'allegati da caricare');
 
       for (const file of attachmentFiles) {
         try {
-          console.log('[create-task] Upload allegato:', file.originalFilename);
-          
           // Leggi file da temp path
           const fileBuffer = await fs.readFile(file.filepath);
-          console.log('[create-task] File letto, dimensione:', fileBuffer.length, 'bytes');
 
           // Upload su Asana con chiamata POST separata
           await uploadAsanaAttachment(
@@ -119,7 +112,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           );
           
           attachmentsUploaded++;
-          console.log('[create-task] Allegato caricato con successo:', file.originalFilename);
 
           // Elimina file temporaneo
           await fs.unlink(file.filepath).catch(() => {});
@@ -128,8 +120,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Continua con gli altri file anche se uno fallisce
         }
       }
-      
-      console.log('[create-task] Upload completato:', attachmentsUploaded, 'su', totalAttachments);
     }
 
     // STEP 4: Invia messaggi WhatsApp via Go High Level
@@ -144,13 +134,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
       
       try {
-        console.log('[create-task] Invio messaggio WhatsApp al cliente:', { ghlContactId });
-        await sendWhatsAppMessage({
+        await sendMessage({
           contactId: ghlContactId,
           message: clientMessage,
         });
         whatsappClientSent = true;
-        console.log('[create-task] Messaggio cliente inviato con successo');
       } catch (whatsappError: any) {
         console.error('[create-task] Errore invio messaggio cliente:', whatsappError.message);
       }
@@ -167,13 +155,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
         
         try {
-          console.log('[create-task] Invio messaggio WhatsApp all\'admin');
-          await sendWhatsAppMessage({
+          await sendMessage({
             contactId: process.env.GHL_ADMIN_CONTACT_ID,
             message: adminMessage,
           });
           whatsappAdminSent = true;
-          console.log('[create-task] Messaggio admin inviato con successo');
         } catch (whatsappError: any) {
           console.error('[create-task] Errore invio messaggio admin:', whatsappError.message);
         }

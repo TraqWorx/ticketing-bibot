@@ -6,11 +6,11 @@
  * Campi modificabili:
  * - Nome
  * - Cognome
- * - Telefono
  * - ghl_contact_id (GoHighLevel Contact ID)
  * 
  * Campi NON modificabili (readonly):
  * - Email
+ * - Telefono
  * 
  * Pattern: Componente controllato con validazioni
  */
@@ -53,9 +53,6 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
         }
         if (!formData.lastName.trim()) {
             newErrors.lastName = 'Cognome obbligatorio';
-        }
-        if (!formData.phone.trim()) {
-            newErrors.phone = 'Telefono obbligatorio';
         }
         if (!formData.ghl_contact_id.trim()) {
             newErrors.ghl_contact_id = 'GoHighLevel Contact ID obbligatorio';
@@ -128,19 +125,20 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                     </Box>
                 </HStack>
 
-                {/* Telefono */}
+                {/* Telefono (readonly) */}
                 <Box>
-                    <Text fontSize="sm" fontWeight="medium" mb={1}>Telefono</Text>
+                    <Text fontSize="sm" fontWeight="medium" mb={1} color="gray.600">Telefono</Text>
                     <Input
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="+39 333 1234567"
-                        borderColor={errors.phone ? 'red.500' : 'gray.200'}
+                        readOnly
+                        bg="gray.100"
+                        color="gray.600"
+                        cursor="not-allowed"
                     />
-                    {errors.phone && (
-                        <Text color="red.500" fontSize="sm" mt={1}>{errors.phone}</Text>
-                    )}
+                    <Text fontSize="xs" color="gray.500" mt={1}>
+                        Il telefono non è modificabile
+                    </Text>
                 </Box>
 
                 {/* GoHighLevel Contact ID */}

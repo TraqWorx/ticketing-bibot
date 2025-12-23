@@ -24,22 +24,25 @@ import {
   Flex,
   Badge,
   Icon,
+  Stack,
+  useBreakpointValue,
 } from '@chakra-ui/react';
 import { FiSearch, FiPlus, FiFilter, FiRefreshCw, FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { TicketCard } from '../components/TicketCard';
-import { TicketDetailModal } from '../components/TicketDetailModal';
 import { CreateTicketModal } from '../components/CreateTicketModal';
 import { useTickets } from '../hooks/useTickets';
 import { TicketStatus, Ticket } from '../types';
 import { toast } from 'react-toastify';
 
 export default function TicketingPage() {
-  const { tickets, loading, error, refetch, addTicket, pagination, setPage, getTotalPages, itemsPerPage } = useTickets();
+  const { tickets, loading, error, refetch, addTicket, pagination, setPage, getTotalPages } = useTickets();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Imposta itemsPerPage in base alla dimensione dello schermo
+  const itemsPerPage = useBreakpointValue({ base: 5, md: 8 }) || 8;
   
   // Filtri status con checkbox - default aperti e in lavorazione
   const [statusFilters, setStatusFilters] = useState({
@@ -87,11 +90,6 @@ export default function TicketingPage() {
 
   // Conta quanti filtri sono attivi
   const activeFiltersCount = Object.values(statusFilters).filter(Boolean).length;
-
-  // Handler apertura modale ticket
-  const handleTicketClick = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-  };
 
   // Handler apertura modale creazione
   const handleCreateTicket = () => {
@@ -311,7 +309,7 @@ export default function TicketingPage() {
       </Box>
 
       {/* Lista Tickets - Due Colonne */}
-      <Box bg="gray.50" borderRadius="12px" p={6}>
+      <Box bg="gray.50" borderRadius="12px" p={{ base: 3, md: 6 }}>
         {loading ? (
           <Flex
             justify="center"
@@ -349,7 +347,11 @@ export default function TicketingPage() {
             </Text>
           </Flex>
         ) : (
-          <Flex gap={4} align="flex-start">
+          <Stack 
+            direction={{ base: 'column', md: 'row' }} 
+            gap={{ base: 6, md: 4 }} 
+            align="flex-start"
+          >
             {/* Colonna Aperti */}
             {statusFilters.open ? (() => {
               const openTickets = filteredTickets.filter(t => t.status === TicketStatus.OPEN);
@@ -360,7 +362,7 @@ export default function TicketingPage() {
               const paginatedTickets = openTickets.slice(startIndex, endIndex);
               
               return (
-                <Box flex="1" minW="0">
+                <Box flex="1" w="100%">
                   <HStack mb={3} gap={2}>
                     <Text fontSize="xs" fontWeight="700" color="blue.600" textTransform="uppercase">
                       Aperti
@@ -375,7 +377,6 @@ export default function TicketingPage() {
                         key={ticket.id}
                         ticket={ticket}
                         index={startIndex + index}
-                        onClick={() => handleTicketClick(ticket)}
                       />
                     ))}
                     {openTickets.length === 0 && (
@@ -438,7 +439,7 @@ export default function TicketingPage() {
               const paginatedTickets = inProgressTickets.slice(startIndex, endIndex);
               
               return (
-                <Box flex="1" minW="0">
+                <Box flex="1" w="100%">
                   <HStack mb={3} gap={2}>
                     <Text fontSize="xs" fontWeight="700" color="orange.600" textTransform="uppercase">
                       In Lavorazione
@@ -453,7 +454,6 @@ export default function TicketingPage() {
                         key={ticket.id}
                         ticket={ticket}
                         index={startIndex + index}
-                        onClick={() => handleTicketClick(ticket)}
                       />
                     ))}
                     {inProgressTickets.length === 0 && (
@@ -516,7 +516,7 @@ export default function TicketingPage() {
               const paginatedTickets = completedTickets.slice(startIndex, endIndex);
               
               return (
-                <Box flex="1" minW="0">
+                <Box flex="1" w="100%">
                   <HStack mb={3} gap={2}>
                     <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
                       Completati
@@ -531,7 +531,6 @@ export default function TicketingPage() {
                         key={ticket.id}
                         ticket={ticket}
                         index={startIndex + index}
-                        onClick={() => handleTicketClick(ticket)}
                       />
                     ))}
                     {totalPages > 1 && (
@@ -580,7 +579,7 @@ export default function TicketingPage() {
               const paginatedTickets = completedTickets.slice(startIndex, endIndex);
               
               return (
-                <Box flex="1" minW="0">
+                <Box flex="1" w="100%">
                   <HStack mb={3} gap={2}>
                     <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
                       Completati
@@ -595,7 +594,6 @@ export default function TicketingPage() {
                         key={ticket.id}
                         ticket={ticket}
                         index={startIndex + index}
-                        onClick={() => handleTicketClick(ticket)}
                       />
                     ))}
                     {totalPages > 1 && (
@@ -633,18 +631,9 @@ export default function TicketingPage() {
                 </Box>
               );
             })() : null}
-          </Flex>
+          </Stack>
         )}
       </Box>
-
-      {/* Modale Dettaglio Ticket */}
-      {selectedTicket && (
-        <TicketDetailModal
-          ticket={selectedTicket}
-          isOpen={!!selectedTicket}
-          onClose={() => setSelectedTicket(null)}
-        />
-      )}
 
       {/* Modale Creazione Ticket */}
       <CreateTicketModal

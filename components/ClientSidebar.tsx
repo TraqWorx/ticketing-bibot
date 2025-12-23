@@ -121,11 +121,15 @@ export const ClientMobileSidebar = () => {
                 position="fixed"
                 top={4}
                 left={4}
-                zIndex={10}
+                zIndex={100}
                 bg="white"
+                boxShadow="md"
                 display={{ base: 'flex', lg: 'none' }}
+                borderRadius="full"
+                color="black"
+                _hover={{ bg: "gray.100" }}
             >
-                <FiMenu />
+                <Icon as={FiMenu} boxSize="20px" />
             </IconButton>
 
             <Drawer.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)} placement="start">

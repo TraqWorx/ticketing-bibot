@@ -33,10 +33,20 @@ interface CreateTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (ticket: Ticket) => void;
+  targetUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    ghl_contact_id: string;
+  };
 }
 
-export const CreateTicketModal = ({ isOpen, onClose, onSuccess }: CreateTicketModalProps) => {
+export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: CreateTicketModalProps) => {
   const { user } = useAuth();
+  
+  // Usa targetUser se fornito (admin che crea per un cliente), altrimenti usa user corrente
+  const ticketCreator = targetUser || user;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -85,7 +95,7 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess }: CreateTicketMo
       return;
     }
 
-    if (!user?.id) {
+    if (!ticketCreator?.id) {
       toast.error('Utente non autenticato');
       return;
     }
@@ -98,10 +108,10 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess }: CreateTicketMo
       formDataToSend.append('title', formData.title);
       formDataToSend.append('description', formData.description);
       formDataToSend.append('priority', formData.priority);
-      formDataToSend.append('creatorId', user.id);
-      formDataToSend.append('creatorName', `${user.firstName} ${user.lastName}`);
-      formDataToSend.append('creatorPhone', user.phone);
-      formDataToSend.append('ghlContactId', user.ghl_contact_id);
+      formDataToSend.append('creatorId', ticketCreator.id);
+      formDataToSend.append('creatorName', `${ticketCreator.firstName} ${ticketCreator.lastName}`);
+      formDataToSend.append('creatorPhone', ticketCreator.phone);
+      formDataToSend.append('ghlContactId', ticketCreator.ghl_contact_id);
       
       // Aggiungi tutti gli allegati
       attachments.forEach((file) => {

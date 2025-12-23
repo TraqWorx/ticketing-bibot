@@ -32,6 +32,7 @@ import { Modal } from '@/components/Modal';
 import { CreateUserForm } from '../components/CreateUserForm';
 import { EditUserForm } from '../components/EditUserForm';
 import { UsersTable } from '../components/UsersTable';
+import { CreateTicketModal } from '@/modules/ticketing/components/CreateTicketModal';
 import { createClientUser, getClientUsers, updateUser, deleteUser } from '@/services/users.service';
 import { User, CreateUserInput } from '@/types/user';
 
@@ -41,6 +42,7 @@ export default function UsersManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ userId: string; clientName: string } | null>(null);
+  const [ticketUserTarget, setTicketUserTarget] = useState<User | null>(null);
   
   // Paginazione e filtri
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,17 +96,27 @@ export default function UsersManagementPage() {
   const handleCreateUser = async (data: CreateUserInput) => {
     try {
       const { user, message } = await createClientUser(data);
-      
       toast.success(
-        `✅ ${message}\nEmail: ${user.email}`,
+        `${message}\nEmail: ${user.email}`,
         { autoClose: 8000 }
       );
       setIsModalOpen(false);
-      
       // Ricarica lista
       await loadUsers();
     } catch (error: any) {
-      toast.error(error.message || 'Errore durante la creazione del cliente');
+      // Gestione robusta per errori email già in uso
+      const msg = String(error.message || '').toLowerCase();
+      if (
+        msg.includes('email già registrata') ||
+        msg.includes('email address is already in use') ||
+        msg.includes('the email address is already in use') ||
+        msg.includes('auth/email-already-exists')
+      ) {
+        toast.error('Questa email è già registrata.');
+      } else {
+        toast.error(error.message || 'Errore durante la creazione del cliente');
+      }
+      // Importante: non ri-lanciare l'errore per evitare che il frontend crashi
     }
   };
 
@@ -147,6 +159,22 @@ export default function UsersManagementPage() {
     }
   };
 
+  // Handle apertura modale creazione ticket per utente
+  const handleCreateTicketForUser = (user: User) => {
+    setTicketUserTarget(user);
+  };
+
+  // Handle chiusura modale ticket
+  const handleTicketModalClose = () => {
+    setTicketUserTarget(null);
+  };
+
+  // Handle successo creazione ticket
+  const handleTicketSuccess = () => {
+    toast.success('Ticket creato con successo per il cliente');
+    setTicketUserTarget(null);
+  };
+
   return (
     <VStack gap={6} align="stretch">
       {/* Header */}
@@ -175,6 +203,7 @@ export default function UsersManagementPage() {
         size="lg"
       >
         <CreateUserForm
+          key={isModalOpen ? 'open' : 'closed'}
           onSubmit={handleCreateUser}
           onCancel={() => setIsModalOpen(false)}
         />
@@ -233,6 +262,20 @@ export default function UsersManagementPage() {
           </HStack>
         </VStack>
       </Modal>
+
+      {/* Create Ticket Modal */}
+      <CreateTicketModal
+        isOpen={!!ticketUserTarget}
+        onClose={handleTicketModalClose}
+        onSuccess={handleTicketSuccess}
+        targetUser={ticketUserTarget ? {
+          id: ticketUserTarget.id,
+          firstName: ticketUserTarget.firstName,
+          lastName: ticketUserTarget.lastName,
+          phone: ticketUserTarget.phone,
+          ghl_contact_id: ticketUserTarget.ghl_contact_id,
+        } : undefined}
+      />
 
       {/* Users Table */}
       <Box>
@@ -324,6 +367,7 @@ export default function UsersManagementPage() {
               users={users}
               onEdit={handleEditUser}
               onDeleteUser={handleDeleteUser}
+              onCreateTicket={handleCreateTicketForUser}
             />
             
             {/* Paginazione */}

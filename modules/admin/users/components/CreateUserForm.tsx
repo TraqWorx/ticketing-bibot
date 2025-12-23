@@ -38,7 +38,6 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
         lastName: '',
         email: '',
         phone: '',
-        ghl_contact_id: '',
     });
 
     const [errors, setErrors] = useState<Partial<Record<keyof CreateUserInput, string>>>({});
@@ -62,9 +61,6 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
         if (!formData.phone.trim()) {
             newErrors.phone = 'Telefono obbligatorio';
         }
-        if (!formData.ghl_contact_id.trim()) {
-            newErrors.ghl_contact_id = 'GoHighLevel Contact ID obbligatorio';
-        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -78,16 +74,9 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
         setIsSubmitting(true);
         try {
             await onSubmit(formData);
-            // Reset form on success
-            setFormData({
-                firstName: '',
-                lastName: '',
-                email: '',
-                phone: '',
-                ghl_contact_id: '',
-            });
-        } catch (error: any) {
-            toast.error(error.message || 'Errore durante l\'invio del form');
+        } catch (error) {
+            // Errore gestito dal parent
+            console.error('Form submission error:', error);
         } finally {
             setIsSubmitting(false);
         }
@@ -155,27 +144,10 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
                     )}
                 </Box>
 
-                {/* GoHighLevel Contact ID */}
-                <Box>
-                    <Text fontSize="sm" fontWeight="medium" mb={1}>GoHighLevel Contact ID</Text>
-                    <Input
-                        value={formData.ghl_contact_id}
-                        onChange={(e) => setFormData({ ...formData, ghl_contact_id: e.target.value })}
-                        placeholder="esempio: tVzupNVXBYywRntrWQVX"
-                        borderColor={errors.ghl_contact_id ? 'red.500' : 'gray.200'}
-                    />
-                    <Text fontSize="xs" color="gray.600" mt={1}>
-                        ID del contatto su GoHighLevel per sincronizzazione
-                    </Text>
-                    {errors.ghl_contact_id && (
-                        <Text color="red.500" fontSize="sm" mt={1}>{errors.ghl_contact_id}</Text>
-                    )}
-                </Box>
-
                 {/* Info Box */}
                 <Box bg="blue.50" p={4} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">
                     <Text fontSize="sm" color="gray.700">
-                        Il cliente riceverà un'email con un <strong>link sicuro</strong> per impostare la propria password al primo accesso.
+                        Il contatto verrà automaticamente creato o recuperato da <strong>Go High Level</strong>. Il cliente riceverà un'email con un <strong>link sicuro</strong> per impostare la propria password.
                     </Text>
                 </Box>
 

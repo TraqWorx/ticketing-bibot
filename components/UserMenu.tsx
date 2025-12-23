@@ -8,16 +8,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Box, Text, HStack, VStack, Badge, Separator } from '@chakra-ui/react';
-import { FiLogOut } from 'react-icons/fi';
+import { FiLogOut, FiKey } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/config/firebase';
 import { signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 export const UserMenu = () => {
   const { user } = useAuth();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Chiudi menu quando clicchi fuori
@@ -103,6 +105,26 @@ export const UserMenu = () => {
           zIndex={1000}
         >
           <VStack gap={0} align="stretch">
+            {/* Cambia Password */}
+            <Box
+              px={4}
+              py={3}
+              cursor="pointer"
+              _hover={{ bg: 'blue.50' }}
+              transition="all 0.2s"
+              onClick={() => {
+                setIsPasswordModalOpen(true);
+                setIsOpen(false);
+              }}
+            >
+              <HStack gap={3}>
+                <Box as={FiKey} color="blue.500" />
+                <Text fontSize="sm" fontWeight="medium" color="blue.600">
+                  Cambia Password
+                </Text>
+              </HStack>
+            </Box>
+
             {/* Logout */}
             <Box
               px={4}
@@ -122,6 +144,12 @@ export const UserMenu = () => {
           </VStack>
         </Box>
       )}
+
+      {/* Modal Cambio Password */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </Box>
   );
 };

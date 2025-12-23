@@ -17,18 +17,20 @@ import {
   Badge,
   IconButton,
   HStack,
-  Text
+  Text,
 } from '@chakra-ui/react';
-import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { Tooltip } from '@chakra-ui/react';
+import { FiEdit2, FiTrash2, FiFileText } from 'react-icons/fi';
 import { User } from '@/types';
 
 interface UsersTableProps {
   users: User[];
   onEdit?: (user: User) => void;
   onDeleteUser?: (userId: string, clientName: string) => void;
+  onCreateTicket?: (user: User) => void;
 }
 
-export const UsersTable = ({ users, onEdit, onDeleteUser }: UsersTableProps) => {
+export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket }: UsersTableProps) => {
   if (users.length === 0) {
     return (
       <Box p={8} textAlign="center" bg="white" borderRadius="lg" borderWidth="1px">
@@ -66,26 +68,58 @@ export const UsersTable = ({ users, onEdit, onDeleteUser }: UsersTableProps) => 
               </Box>
               <Box as="td" p={3}>
                 <HStack gap={2} justify="flex-end">
+                  {onCreateTicket && (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <IconButton
+                          aria-label="Crea ticket per utente"
+                          size="sm"
+                          variant="ghost"
+                          colorScheme="blue"
+                          onClick={() => onCreateTicket(user)}
+                        >
+                          <FiFileText />
+                        </IconButton>
+                      </Tooltip.Trigger>
+                      <Tooltip.Positioner>
+                        <Tooltip.Content>Crea ticket per utente</Tooltip.Content>
+                      </Tooltip.Positioner>
+                    </Tooltip.Root>
+                  )}
                   {onEdit && (
-                    <IconButton
-                      aria-label="Modifica utente"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onEdit(user)}
-                    >
-                      <FiEdit2 />
-                    </IconButton>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <IconButton
+                          aria-label="Modifica"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onEdit(user)}
+                        >
+                          <FiEdit2 />
+                        </IconButton>
+                      </Tooltip.Trigger>
+                      <Tooltip.Positioner>
+                        <Tooltip.Content>Modifica</Tooltip.Content>
+                      </Tooltip.Positioner>
+                    </Tooltip.Root>
                   )}
                   {onDeleteUser && (
-                    <IconButton
-                      aria-label="Elimina utente"
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="red"
-                      onClick={() => onDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
-                    >
-                      <FiTrash2 />
-                    </IconButton>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <IconButton
+                          aria-label="Elimina"
+                          size="sm"
+                          variant="ghost"
+                          colorScheme="red"
+                          onClick={() => onDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
+                        >
+                          <FiTrash2 />
+                        </IconButton>
+                      </Tooltip.Trigger>
+                      <Tooltip.Positioner>
+                        <Tooltip.Content>Elimina</Tooltip.Content>
+                      </Tooltip.Positioner>
+                    </Tooltip.Root>
                   )}
                 </HStack>
               </Box>

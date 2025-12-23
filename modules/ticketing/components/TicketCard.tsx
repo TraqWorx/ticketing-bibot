@@ -10,10 +10,12 @@
  * - Tags visivi
  * - Metadata footer (commenti, allegati, data)
  * - Hover effects smooth
+ * - Link navigation invece di modal
  */
 
 import { Box, Badge, Text, HStack, VStack, Flex, Icon } from '@chakra-ui/react';
 import { FiMessageSquare, FiPaperclip, FiCalendar, FiMoreVertical } from 'react-icons/fi';
+import { useRouter } from 'next/router';
 import { Ticket, TicketStatus } from '../types';
 
 interface TicketCardProps {
@@ -23,6 +25,17 @@ interface TicketCardProps {
 }
 
 export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      // Naviga alla pagina di dettaglio
+      router.push(`/clienti/ticketing/${ticket.id}`);
+    }
+  };
+
   // Colore bordo basato su status dalle sezioni Asana
   const getStatusBorderColor = () => {
     if (ticket.status === TicketStatus.RESOLVED || ticket.status === TicketStatus.CLOSED) {
@@ -78,7 +91,7 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
       borderLeftColor={getStatusBorderColor()}
       p={3}
       cursor="pointer"
-      onClick={onClick}
+      onClick={handleClick}
       transition="all 0.2s"
       _hover={{
         shadow: 'md',

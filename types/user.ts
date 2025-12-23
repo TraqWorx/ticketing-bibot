@@ -32,5 +32,4 @@ export interface CreateUserInput {
   firstName: string;
   lastName: string;
   phone: string;
-  ghl_contact_id: string;
 }

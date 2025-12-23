@@ -36,14 +36,15 @@ async function getAuthToken(): Promise<string | null> {
  * Invia automaticamente email per impostare password
  */
 export const createClientUser = async (input: CreateUserInput): Promise<{ user: User; message: string }> => {
-  try {
-    const token = await getAuthToken();
-    
-    if (!token) {
-      throw new Error('Autenticazione richiesta');
-    }
+  const token = await getAuthToken();
+  
+  if (!token) {
+    throw new Error('Autenticazione richiesta');
+  }
 
-    const axios = require('axios');
+  const axios = require('axios');
+  
+  try {
     const response = await axios.post('/api/users/create', input, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -55,7 +56,15 @@ export const createClientUser = async (input: CreateUserInput): Promise<{ user: 
       message: response.data.message,
     };
   } catch (error: any) {
-    console.error('Error creating user:', error);
+    // Gestione errori axios - estrai il messaggio dal backend
+    if (error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    
+    if (error.response?.status === 400) {
+      throw new Error('Errore durante la creazione del cliente');
+    }
+    
     throw new Error(error.message || 'Errore durante la creazione del cliente');
   }
 };

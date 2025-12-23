@@ -178,13 +178,6 @@ export async function uploadAsanaAttachment(
         throw new Error('ASANA_ACCESS_TOKEN non configurato nel .env');
     }
 
-    console.log('[uploadAsanaAttachment] Inizio upload:', { 
-        taskGid, 
-        fileName, 
-        mimeType, 
-        fileSize: fileBuffer.length 
-    });
-
     try {
         // STEP 1: Usa axios per gestire correttamente multipart/form-data
         // axios gestisce nativamente FormData meglio di fetch
@@ -199,7 +192,6 @@ export async function uploadAsanaAttachment(
         });
 
         const url = `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}/attachments`;
-        console.log('[uploadAsanaAttachment] URL:', url);
 
         // STEP 3: Invia con axios
         // axios gestisce automaticamente gli headers corretti per FormData
@@ -210,12 +202,6 @@ export async function uploadAsanaAttachment(
             },
             maxBodyLength: Infinity, // Permette file di grandi dimensioni
             maxContentLength: Infinity,
-        });
-
-        console.log('[uploadAsanaAttachment] Response status:', response.status);
-        console.log('[uploadAsanaAttachment] Upload completato:', { 
-            gid: response.data.data.gid, 
-            name: response.data.data.name 
         });
         
         return {
@@ -267,8 +253,6 @@ export async function getUserTasks(userId: string): Promise<any> {
 
         const url = `${process.env.ASANA_API_BASE_URL}/workspaces/${workspaceId}/tasks/search?projects.any=${projectId}&custom_fields.${customFieldId}.value=${userId}&opt_fields=gid,name,completed,memberships.section.name,custom_fields`;
 
-        console.log('[getUserTasks] Chiamata Asana API:', { userId });
-
         const axios = require('axios');
         const response = await axios.get(url, {
             headers: {
@@ -276,8 +260,6 @@ export async function getUserTasks(userId: string): Promise<any> {
             },
         });
 
-        console.log('[getUserTasks] Asana response status:', response.status);
-        console.log('[getUserTasks] Asana result:', { count: response.data?.data?.length || 0 });
         return response.data;
     } catch (error: any) {
         console.error('Errore recupero task utente:', error);
