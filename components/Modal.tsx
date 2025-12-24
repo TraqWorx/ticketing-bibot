@@ -23,6 +23,7 @@ interface ModalProps {
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   footer?: ReactNode;
+  closable?: boolean; // Se false, disabilita chiusura con ESC, click fuori e pulsante X
 }
 
 const sizeMap = {
@@ -38,10 +39,13 @@ export const Modal = ({
   title, 
   children, 
   size = 'md',
-  footer 
+  footer,
+  closable = true
 }: ModalProps) => {
-  // Chiudi con ESC
+  // Chiudi con ESC solo se closable
   useEffect(() => {
+    if (!closable) return;
+    
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         onClose();
@@ -49,7 +53,7 @@ export const Modal = ({
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, closable]);
 
   if (!isOpen) return null;
 
@@ -73,7 +77,7 @@ export const Modal = ({
         right="0"
         bottom="0"
         bg="blackAlpha.600"
-        onClick={onClose}
+        onClick={closable ? onClose : undefined}
       />
 
       {/* Modal Content */}
@@ -88,24 +92,28 @@ export const Modal = ({
         display="flex"
         flexDirection="column"
       >
-        {/* Header */}
-        <HStack
-          justify="space-between"
-          align="center"
-          p={6}
-          borderBottomWidth="1px"
-          borderColor="gray.200"
-        >
-          <Heading size="lg">{title}</Heading>
-          <IconButton
-            aria-label="Chiudi modale"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
+        {/* Header - mostra solo se c'è titolo o è closable */}
+        {(title || closable) && (
+          <HStack
+            justify="space-between"
+            align="center"
+            p={6}
+            borderBottomWidth="1px"
+            borderColor="gray.200"
           >
-            <FiX size={20} />
-          </IconButton>
-        </HStack>
+            <Heading size="lg">{title}</Heading>
+            {closable && (
+              <IconButton
+                aria-label="Chiudi modale"
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+              >
+                <FiX size={20} />
+              </IconButton>
+            )}
+          </HStack>
+        )}
 
         {/* Body */}
         <Box flex="1" overflowY="auto" p={6}>

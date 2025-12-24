@@ -251,7 +251,7 @@ export async function getUserTasks(userId: string): Promise<any> {
         const projectId = process.env.ASANA_PROJECT_GID;
         const workspaceId = process.env.ASANA_WORKSPACE_GID;
 
-        const url = `${process.env.ASANA_API_BASE_URL}/workspaces/${workspaceId}/tasks/search?projects.any=${projectId}&custom_fields.${customFieldId}.value=${userId}&opt_fields=gid,name,completed,memberships.section.name,custom_fields`;
+        const url = `${process.env.ASANA_API_BASE_URL}/workspaces/${workspaceId}/tasks/search?projects.any=${projectId}&custom_fields.${customFieldId}.value=${userId}&opt_fields=gid,name,completed,memberships.section.name,custom_fields,due_on`;
 
         const axios = require('axios');
         const response = await axios.get(url, {
@@ -281,7 +281,7 @@ export async function getTaskDetail(taskGid: string): Promise<any> {
     try {
         const axios = require('axios');
         const response = await axios.get(
-            `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}?opt_fields=gid,name,notes,completed,created_at,modified_at,permalink_url,attachments.name,attachments.download_url,attachments.gid,attachments.view_url`,
+            `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}?opt_fields=gid,name,notes,completed,created_at,modified_at,permalink_url,attachments.name,attachments.download_url,attachments.gid,attachments.view_url,due_on`,
             {
                 headers: {
                     'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,

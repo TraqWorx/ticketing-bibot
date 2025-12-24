@@ -27,7 +27,16 @@ import { FiUpload, FiX } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
 import { Modal } from '@/components/Modal';
-import { Ticket, TicketStatus, TicketPriority } from '../types';
+import { Ticket, TicketStatus } from '../types';
+import { TicketPriority } from '../../../types/ticket';
+
+interface AxiosError {
+  response?: {
+    status: number;
+    data?: any;
+  };
+  message?: string;
+}
 
 interface CreateTicketModalProps {
   isOpen: boolean;
@@ -112,7 +121,7 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
       formDataToSend.append('creatorName', `${ticketCreator.firstName} ${ticketCreator.lastName}`);
       formDataToSend.append('creatorPhone', ticketCreator.phone);
       formDataToSend.append('ghlContactId', ticketCreator.ghl_contact_id);
-      
+
       // Aggiungi tutti gli allegati
       attachments.forEach((file) => {
         formDataToSend.append('attachments', file);
@@ -120,67 +129,75 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
 
       // Chiamata API per creare task su Asana
       const axios = require('axios');
-      const response = await axios.post('/api/asana/create-task', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      try {
+        const response = await axios.post('/api/asana/create-task', formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
 
-      const result = response.data;
-      
-      // Verifica che taskGid sia presente
-      if (!result.taskGid) {
-        throw new Error('Risposta API non valida: taskGid mancante');
+        const result = response.data;
+
+        // Verifica che taskGid sia presente
+        if (!result.taskGid) {
+          throw new Error('Risposta API non valida: taskGid mancante');
+        }
+
+        // Mostra successo con informazioni sugli allegati
+        if (result.attachmentErrors && result.attachmentErrors > 0) {
+          toast.warning(
+            `Ticket creato, ma ${result.attachmentErrors} allegato/i non caricato/i. Controlla i log.`,
+            { autoClose: 5000 }
+          );
+        } else {
+          toast.success('Ticket creato con successo!', { autoClose: 3000 });
+        }
+
+        // Costruisci oggetto ticket dal risultato
+        const priorityMap: Record<string, TicketPriority> = {
+          high: TicketPriority.URGENT,
+          medium: TicketPriority.MEDIUM,
+          low: TicketPriority.LOW,
+          none: TicketPriority.LOW,
+        };
+
+        const newTicket: Ticket = {
+          id: result.taskGid,
+          title: formData.title,
+          description: '',
+          status: TicketStatus.OPEN,
+          priority: priorityMap[formData.priority] || TicketPriority.MEDIUM,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          tags: [],
+          commentsCount: 0,
+          attachmentsCount: result.attachmentsCount || 0,
+          waitingFor: 'admin',
+        };
+
+        // Reset form
+        setFormData({ title: '', description: '', priority: 'medium' });
+        setAttachments([]);
+
+        // Chiudi modale
+        onClose();
+
+        // Passa il nuovo ticket al callback
+        onSuccess?.(newTicket);
+      } catch (error: unknown) {
+        const axiosError = error as AxiosError;
+        if (axiosError?.response?.status !== 401) {
+          toast.error('Errore creazione ticket');
+        }
       }
-      
-      // Mostra successo con informazioni sugli allegati
-      if (result.attachmentErrors && result.attachmentErrors > 0) {
-        toast.warning(
-          `Ticket creato, ma ${result.attachmentErrors} allegato/i non caricato/i. Controlla i log.`,
-          { autoClose: 5000 }
-        );
-      } else {
-        toast.success('Ticket creato con successo!');
-      }
-      
-      // Costruisci oggetto ticket dal risultato
-      const priorityMap: Record<string, TicketPriority> = {
-        high: TicketPriority.URGENT,
-        medium: TicketPriority.MEDIUM,
-        low: TicketPriority.LOW,
-        none: TicketPriority.LOW,
-      };
-      
-      const newTicket: Ticket = {
-        id: result.taskGid,
-        title: formData.title,
-        description: '',
-        status: TicketStatus.OPEN,
-        priority: priorityMap[formData.priority] || TicketPriority.MEDIUM,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        tags: [],
-        commentsCount: 0,
-        attachmentsCount: result.attachmentsCount || 0,
-      };
-      
-      // Reset form
-      setFormData({ title: '', description: '', priority: 'medium' });
-      setAttachments([]);
-      
-      // Chiudi modale
-      onClose();
-      
-      // Passa il nuovo ticket al callback
-      onSuccess?.(newTicket);
     } catch (error: any) {
       console.error('Errore creazione ticket:', error);
-      
+
       // Gestione errori dettagliata
-      const errorMessage = error.response?.data?.message 
-        || error.message 
+      const errorMessage = error.response?.data?.message
+        || error.message
         || 'Errore durante la creazione del ticket';
-      
+
       toast.error(errorMessage, { autoClose: 5000 });
     } finally {
       setIsSubmitting(false);

@@ -3,6 +3,13 @@
  * 
  * Crea un nuovo commento su un task Asana con allegati
  * 
+ * FLUSSO:
+ * 1. Crea commento su Asana
+ * 2. Upload allegati
+ * 3. Aggiorna stato ticket su Firestore
+ * 4. Invia messaggio notifica all'admin
+ * 5. Invia webhook evento a GHL per automazioni
+ * 
  * Method: POST
  * Body: FormData { taskGid, text, attachments[] }
  * 
@@ -12,7 +19,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { IncomingForm, File } from 'formidable';
 import { createTaskStory, uploadAsanaAttachment } from '@/lib/asana/asanaService';
+import { getAdminClientRepliedMessage } from '@/lib/ghl/messages';
+import { updateTicketOnReply, getTicket } from '@/lib/ticket/ticketService';
+import { sendTicketRepliedByClientEvent } from '@/lib/ghl/ghlService';
 import fs from 'fs/promises';
+import { transcribeAudioWithWhisper } from '@/lib/openaiWhisper';
 
 // Disabilita body parser di Next.js per gestire multipart/form-data
 export const config = {
@@ -54,42 +65,84 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'Il testo del commento è obbligatorio' });
     }
 
-    // STEP 1: Crea commento su Asana
-    const result = await createTaskStory(taskGid, text);
 
+    // STEP 1+2: Se c'è un vocale, trascrivi e allega
     let attachmentsUploaded = 0;
     let totalAttachments = 0;
+    const audioSummaries: string[] = [];
 
-    // STEP 2: Upload allegati se presenti
     if (files.attachments) {
-      const attachmentFiles = Array.isArray(files.attachments) 
-        ? files.attachments 
+      const attachmentFiles = Array.isArray(files.attachments)
+        ? files.attachments
         : [files.attachments];
-
       totalAttachments = attachmentFiles.length;
-
       for (const file of attachmentFiles) {
         try {
-          // Leggi file da temp path
           const fileBuffer = await fs.readFile(file.filepath);
-
+          let summary = '';
+          let uploaded = null;
           // Upload su Asana
-          await uploadAsanaAttachment(
-            taskGid, 
-            fileBuffer, 
+          uploaded = await uploadAsanaAttachment(
+            taskGid,
+            fileBuffer,
             file.originalFilename || 'attachment',
             file.mimetype || undefined
           );
-          
           attachmentsUploaded++;
-
-          // Elimina file temporaneo
+          // Se è audio, trascrivi e aggiungi summary (sempre, anche se transcript fallisce)
+          if (file.mimetype && file.mimetype.startsWith('audio')) {
+            let transcript = '';
+            try {
+              transcript = await transcribeAudioWithWhisper(fileBuffer, file.originalFilename || 'audio.wav');
+            } catch (err) {
+              transcript = '';
+              console.error('[Whisper error]', err);
+            }
+            if (transcript && transcript.trim()) {
+              summary = `🎤 Nota vocale: ${file.originalFilename || 'audio'}\nTrascrizione:\n${transcript}`;
+            } else {
+              summary = `🎤 Nota vocale: ${file.originalFilename || 'audio'}`;
+            }
+            audioSummaries.push(summary);
+          }
           await fs.unlink(file.filepath).catch(() => {});
         } catch (uploadError: any) {
           console.error(`[create-story] Errore upload allegato ${file.originalFilename}:`, uploadError.message);
-          // Continua con gli altri file anche se uno fallisce
         }
       }
+    }
+
+    // STEP 1: Crea commento su Asana
+    let commentText = text;
+    if (audioSummaries.length > 0) {
+      commentText = audioSummaries.join('\n\n');
+    }
+    const result = await createTaskStory(taskGid, commentText);
+
+    // STEP 3: Aggiorna stato ticket su Firestore (client ha risposto)
+    let firestoreUpdated = false;
+    let ticket = null;
+    try {
+      ticket = await getTicket(taskGid);
+      if (ticket) {
+        await updateTicketOnReply({
+          ticketId: taskGid,
+          repliedBy: 'client',
+        });
+        firestoreUpdated = true;
+      }
+    } catch (firestoreError: any) {
+      console.error('[create-story] Errore aggiornamento Firestore:', firestoreError.message);
+    }
+
+    // STEP 4: Invia webhook evento a GHL per automazioni
+    let webhookSent = false;
+    if (ticket?.ghlContactId) {
+      webhookSent = await sendTicketRepliedByClientEvent({
+        clientId: ticket.clientId,
+        ghlContactId: ticket.ghlContactId,
+        ticketId: taskGid,
+      });
     }
 
     return res.status(200).json({
@@ -97,6 +150,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: result.data,
       attachmentsCount: attachmentsUploaded,
       attachmentErrors: totalAttachments - attachmentsUploaded,
+      firestoreUpdated,
+      webhookSent,
       message: attachmentsUploaded > 0 
         ? `Commento aggiunto con ${attachmentsUploaded} allegato/i`
         : 'Commento aggiunto con successo',

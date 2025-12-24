@@ -13,10 +13,42 @@
  * - Link navigation invece di modal
  */
 
-import { Box, Badge, Text, HStack, VStack, Flex, Icon } from '@chakra-ui/react';
-import { FiMessageSquare, FiPaperclip, FiCalendar, FiMoreVertical } from 'react-icons/fi';
+import { Box, Badge, Text, HStack, VStack, Flex, Icon, Tooltip } from '@chakra-ui/react';
+import { FiMessageSquare, FiPaperclip, FiCalendar, FiMoreVertical, FiClock } from 'react-icons/fi';
+  // Badge Priorità
+  const getPriorityLabel = (priority?: string) => {
+    switch (priority) {
+      case 'urgent': return 'Urgente';
+      case 'high': return 'Alta';
+      case 'medium': return 'Media';
+      case 'low': return 'Bassa';
+      default: return '-';
+    }
+  };
+
+  // Colore custom per badge priorità
+  const getPriorityBg = (priority?: string) => {
+    switch (priority) {
+      case 'low': return 'green.100'; // verdino
+      case 'medium': return 'yellow.100'; // giallino
+      case 'high': return 'red.200'; // rosso chiaro
+      case 'urgent': return 'red.400'; // rosso acceso
+      default: return 'gray.100';
+    }
+  };
+
+  const getPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case 'low': return 'green.700';
+      case 'medium': return 'yellow.800';
+      case 'high': return 'red.700';
+      case 'urgent': return 'white';
+      default: return 'gray.700';
+    }
+  };
 import { useRouter } from 'next/router';
 import { Ticket, TicketStatus } from '../types';
+import { formatDueDate } from '../hooks/useTickets';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -54,20 +86,6 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
     urgent: 'red.600',
   };
 
-  const formatDate = (date?: Date) => {
-    if (!date) return null;
-    const d = new Date(date);
-    const today = new Date();
-    const diffDays = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Oggi';
-    if (diffDays === 1) return 'Domani';
-    if (diffDays === -1) return 'Ieri';
-    if (diffDays < -1) return `${Math.abs(diffDays)} giorni fa`;
-    
-    return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
-  };
-
   const getInitials = (name?: string) => {
     if (!name) return '?';
     return name
@@ -93,6 +111,9 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
       cursor="pointer"
       onClick={handleClick}
       transition="all 0.2s"
+      w={{ base: '100%', sm: '340px', md: '340px' }}
+      minW={{ base: '100%', sm: '340px', md: '340px' }}
+      maxW={{ base: '100%', sm: '340px', md: '340px' }}
       _hover={{
         shadow: 'md',
         borderColor: 'gray.300',
@@ -125,16 +146,80 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
               fontSize="sm"
               fontWeight="600"
               color="gray.800"
-              truncate
               mb={1}
+              overflow="hidden"
+              textOverflow="ellipsis"
+              whiteSpace="pre-line"
+              wordBreak="break-word"
+              maxW="100%"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+              title={ticket.title && ticket.title.length >= 32 ? ticket.title : undefined}
             >
               {ticket.title}
             </Text>
+            {/* BADGE PRIORITÀ + ATTESA RISPOSTA */}
+            <HStack gap={2} mt={1} flexWrap="wrap">
+              {/* Badge Priorità */}
+              <Badge
+                bg={getPriorityBg(ticket.priority)}
+                color={getPriorityColor(ticket.priority)}
+                fontSize="10px"
+                px={2}
+                py={0.5}
+                borderRadius="full"
+                fontWeight="600"
+              >
+                Priorità: {getPriorityLabel(ticket.priority)}
+              </Badge>
+              {/* Badge solo Attesa Admin */}
+              {ticket.waitingFor === 'admin' && (
+                <Badge
+                  bg="purple.100"
+                  color="purple.700"
+                  fontSize="10px"
+                  px={2}
+                  py={0.5}
+                  borderRadius="full"
+                  fontWeight="600"
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                >
+                  <Icon as={FiClock} boxSize="10px" />
+                  Attesa Admin
+                </Badge>
+              )}
+              {/* Badge Data di Scadenza */}
+              <Badge
+                bg={formatDueDate(ticket.dueDate).colorScheme === 'red' ? 'red.100' :
+                    formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.100' :
+                    formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.100' :
+                    formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.100' : 'gray.100'}
+                color={formatDueDate(ticket.dueDate).colorScheme === 'red' ? 'red.700' :
+                       formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.700' :
+                       formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.700' :
+                       formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.700' : 'gray.700'}
+                fontSize="10px"
+                px={2}
+                py={0.5}
+                borderRadius="full"
+                fontWeight="600"
+                display="flex"
+                alignItems="center"
+                gap={1}
+              >
+                <Icon as={FiCalendar} boxSize="10px" />
+                {formatDueDate(ticket.dueDate).text}
+              </Badge>
+            </HStack>
           </Box>
 
           {/* Metadata compatta */}
           <HStack gap={4} fontSize="xs" color="gray.500" flexShrink={0}>
-
             {/* Comments */}
             {(ticket.commentsCount ?? 0) > 0 && (
               <HStack gap={1}>
@@ -142,19 +227,6 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
                 <Text>{ticket.commentsCount}</Text>
               </HStack>
             )}
-
-            {/* Due Date */}
-            {ticket.dueDate && (
-              <HStack
-                gap={1}
-                color={isOverdue ? 'red.500' : isDueSoon ? 'orange.500' : 'gray.500'}
-                fontWeight={isOverdue || isDueSoon ? '600' : 'normal'}
-              >
-                <Icon as={FiCalendar} boxSize="14px" />
-                <Text fontSize="10px">{formatDate(ticket.dueDate)}</Text>
-              </HStack>
-            )}
-
             {/* Assignee Avatar */}
             {ticket.assignee && (
               <Flex

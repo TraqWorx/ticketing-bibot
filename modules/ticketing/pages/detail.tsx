@@ -37,9 +37,11 @@ import {
     FiClock,
     FiMic,
     FiSend,
+    FiCalendar,
 } from 'react-icons/fi';
 import { AsanaTaskDetail } from '@/types';
 import { toast } from 'react-toastify';
+import { formatDueDate } from '../hooks/useTickets';
 
 // Stile per animazione pulse
 const pulseKeyframes = `
@@ -164,6 +166,38 @@ export default function TicketDetailPage() {
         
         return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ', ' + 
                d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // Helper per estrarre priorità dai custom fields Asana
+    const getPriorityFromAsana = (taskDetail: AsanaTaskDetail) => {
+        const priorityCustomField = taskDetail.custom_fields?.find(
+            (cf: any) => cf.name?.toLowerCase() === 'priorità' || cf.name?.toLowerCase() === 'task_priority'
+        );
+        let priorityValue = (
+            priorityCustomField?.display_value || 
+            priorityCustomField?.enum_value?.name || 
+            'media'
+        ).toString().trim().toLowerCase();
+        
+        if (["alta", "high", "urgente", "urgent"].includes(priorityValue)) {
+            return 'urgent';
+        } else if (["media", "medium"].includes(priorityValue)) {
+            return 'medium';
+        } else if (["bassa", "low"].includes(priorityValue)) {
+            return 'low';
+        }
+        return 'medium';
+    };
+
+    // Helper per determinare lo stato basato sulla sezione Asana
+    const getStatusFromAsana = (taskDetail: AsanaTaskDetail) => {
+        const sectionName = taskDetail.memberships?.[0]?.section?.name?.toLowerCase() || '';
+        if (sectionName.includes('lavorazione') || sectionName.includes('in progress')) {
+            return 'in_progress';
+        } else if (sectionName.includes('completati') || sectionName.includes('completed') || sectionName.includes('done')) {
+            return 'resolved';
+        }
+        return 'open';
     };
 
     const startRecording = async () => {
@@ -364,19 +398,21 @@ export default function TicketDetailPage() {
                             {/* Navigation + Header in un'unica riga */}
                             <HStack justify="space-between" align="start">
                                 <HStack gap={2}>
-                                    {/* Bottone Torna indietro solo su desktop, su mobile c'è l'hamburger */}
+                                    {/* Bottone Torna indietro sempre visibile, mobile-first */}
                                     <IconButton
                                         aria-label="Torna indietro"
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => router.back()}
                                         borderRadius="full"
-                                        display={{ base: 'none', lg: 'flex' }}
+                                        display={{ base: 'flex' }}
+                                        ml={{ base: '-8px', lg: '0' }}
+                                        mt={{ base: '-8px', lg: '0' }}
                                     >
                                         <FiArrowLeft />
                                     </IconButton>
                                     <Badge
-                                        bg={taskDetail.completed ? 'green.500' : 'blue.400'}
+                                        bg={taskDetail.completed ? 'green.500' : 'gray.400'}
                                         color="white"
                                         px={3}
                                         py={1}
@@ -384,7 +420,7 @@ export default function TicketDetailPage() {
                                         fontSize="xs"
                                         fontWeight="600"
                                     >
-                                        {taskDetail.completed ? 'Completato' : 'Aperto'}
+                                        {taskDetail.completed ? 'Completato' : 'Non Completato'}
                                     </Badge>
                                 </HStack>
                                 <HStack gap={2}>
@@ -411,6 +447,44 @@ export default function TicketDetailPage() {
                             <Text fontSize="xl" fontWeight="700" color="gray.900" lineHeight="1.3">
                                 {taskDetail.name}
                             </Text>
+
+                            {/* Badge Section */}
+                            <HStack gap={2} mt={2} flexWrap="wrap">
+
+                                {/* Badge Priorità */}
+                                <Badge
+                                    colorScheme={
+                                        getPriorityFromAsana(taskDetail) === 'urgent' ? 'red' :
+                                        getPriorityFromAsana(taskDetail) === 'medium' ? 'yellow' : 'gray'
+                                    }
+                                    px={3}
+                                    py={1}
+                                    borderRadius="full"
+                                    fontWeight="600"
+                                    fontSize="xs"
+                                >
+                                    Priorità: {
+                                        getPriorityFromAsana(taskDetail) === 'urgent' ? 'Urgente' :
+                                        getPriorityFromAsana(taskDetail) === 'medium' ? 'Media' : 'Bassa'
+                                    }
+                                </Badge>
+
+                                {/* Badge Data di Scadenza */}
+                                <Badge
+                                    colorScheme={formatDueDate(taskDetail.due_on ? new Date(taskDetail.due_on) : undefined).colorScheme}
+                                    fontSize="xs"
+                                    px={3}
+                                    py={1}
+                                    borderRadius="full"
+                                    fontWeight="600"
+                                    display="flex"
+                                    alignItems="center"
+                                    gap={1}
+                                >
+                                    <Icon as={FiCalendar} boxSize="12px" />
+                                    {formatDueDate(taskDetail.due_on ? new Date(taskDetail.due_on) : undefined).text}
+                                </Badge>
+                            </HStack>
 
                             {taskDetail.notes && (
                                 <Box

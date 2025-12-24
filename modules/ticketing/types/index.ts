@@ -5,19 +5,9 @@
  * Definisce le interfacce base per ticket, stati e priorità
  */
 
-export enum TicketStatus {
-  OPEN = 'open',
-  IN_PROGRESS = 'in_progress',
-  RESOLVED = 'resolved',
-  CLOSED = 'closed'
-}
+import { TicketStatus, TicketPriority } from '../../../types/ticket';
 
-export enum TicketPriority {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  URGENT = 'urgent'
-}
+export { TicketStatus, TicketPriority } from '../../../types/ticket';
 
 export interface Assignee {
   id: string;
@@ -52,4 +42,15 @@ export interface Ticket {
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
+  lastActivityAt?: Date;
+  waitingFor?: 'client' | 'admin';
+  section?: 'open' | 'inProgress' | 'completed';
+  lastMessageBy?: 'admin' | 'client';
+
+  // Firebase
+  clientId?: string;
+  clientName?: string;
+  clientPhone?: string;
+  ghlContactId?: string;
+  ticketId?: string;
 }

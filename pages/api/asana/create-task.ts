@@ -2,7 +2,13 @@
  * API ENDPOINT: /api/asana/create-task
  * 
  * Crea un nuovo task su Asana per un ticket cliente con allegati
- * Invia messaggi WhatsApp via Go High Level al cliente e all'admin
+ * 
+ * FLUSSO:
+ * 1. Crea task su Asana
+ * 2. Upload allegati
+ * 3. Salva ticket su Firestore (tracking stato)
+ * 4. Invia messaggi WhatsApp via GHL
+ * 5. Invia webhook evento a GHL per automazioni
  * 
  * Method: POST
  * Body: FormData { title, description, creatorId, creatorName, creatorPhone, ghlContactId, attachments[] }
@@ -13,8 +19,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { IncomingForm, File } from 'formidable';
 import { createAsanaTask, uploadAsanaAttachment } from '@/lib/asana/asanaService';
-import { sendMessage } from '@/lib/ghl/ghlService';
+import { sendMessage, sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
 import { getClientTicketCreatedMessage, getAdminTicketCreatedMessage } from '@/lib/ghl/messages';
+import { createTicket } from '@/lib/ticket/ticketService';
 import fs from 'fs/promises';
 
 // Disabilita body parser di Next.js per gestire multipart/form-data
@@ -86,14 +93,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // STEP 2: Estrai il task_gid dalla risposta
     const taskGid = taskResult.data.gid;
-    
+
     let attachmentsUploaded = 0;
     let totalAttachments = 0;
 
     // STEP 3: Upload allegati se presenti (ciascuno con chiamata separata)
     if (files.attachments) {
-      const attachmentFiles = Array.isArray(files.attachments) 
-        ? files.attachments 
+      const attachmentFiles = Array.isArray(files.attachments)
+        ? files.attachments
         : [files.attachments];
 
       totalAttachments = attachmentFiles.length;
@@ -105,16 +112,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           // Upload su Asana con chiamata POST separata
           await uploadAsanaAttachment(
-            taskGid, 
-            fileBuffer, 
+            taskGid,
+            fileBuffer,
             file.originalFilename || 'attachment',
             file.mimetype || undefined
           );
-          
+
           attachmentsUploaded++;
 
           // Elimina file temporaneo
-          await fs.unlink(file.filepath).catch(() => {});
+          await fs.unlink(file.filepath).catch(() => { });
         } catch (uploadError: any) {
           console.error(`[create-task] Errore upload allegato ${file.originalFilename}:`, uploadError.message);
           // Continua con gli altri file anche se uno fallisce
@@ -122,48 +129,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // STEP 4: Invia messaggi WhatsApp via Go High Level
-    let whatsappClientSent = false;
-    let whatsappAdminSent = false;
-
-    if (ghlContactId && process.env.GHL_API_ACCESS_TOKEN) {
-      const clientMessage = getClientTicketCreatedMessage({
-        creatorName,
+    // STEP 4: Salva ticket su Firestore per tracking stato
+    let firestoreTicketCreated = false;
+    try {
+      await createTicket({
+        ticketId: taskGid,
+        clientId: creatorId,
+        ghlContactId: ghlContactId || undefined,
         title,
-        taskGid,
+        priority,
+        clientName: creatorName,
+        clientPhone: creatorPhone,
       });
-      
-      try {
-        await sendMessage({
-          contactId: ghlContactId,
-          message: clientMessage,
-        });
-        whatsappClientSent = true;
-      } catch (whatsappError: any) {
-        console.error('[create-task] Errore invio messaggio cliente:', whatsappError.message);
-      }
+      firestoreTicketCreated = true;
 
-      // Invia messaggio all'admin se configurato
-      if (process.env.GHL_ADMIN_CONTACT_ID) {
-        const adminMessage = getAdminTicketCreatedMessage({
-          creatorName,
-          creatorPhone,
-          title,
-          priority,
-          description,
-          taskGid,
-        });
-        
-        try {
-          await sendMessage({
-            contactId: process.env.GHL_ADMIN_CONTACT_ID,
-            message: adminMessage,
-          });
-          whatsappAdminSent = true;
-        } catch (whatsappError: any) {
-          console.error('[create-task] Errore invio messaggio admin:', whatsappError.message);
-        }
-      }
+    } catch (firestoreError: any) {
+      console.error('[create-task] Errore salvataggio Firestore:', firestoreError.message);
+      // Non blocchiamo il flusso - il ticket è già creato su Asana
+    }
+
+    // STEP 5: Invia webhook evento a GHL per automazioni
+    let webhookSent = false;
+    if (ghlContactId) {
+      webhookSent = await sendTicketCreatedEvent({
+        clientId: creatorId,
+        ghlContactId,
+        ticketId: taskGid,
+        title,
+        priority,
+        clientName: creatorName,
+        clientPhone: creatorPhone,
+      });
     }
 
     // Risposta successo
@@ -173,14 +169,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       taskUrl: taskResult.data.permalink_url,
       attachmentsCount: attachmentsUploaded,
       attachmentErrors: totalAttachments - attachmentsUploaded,
-      whatsappClientSent,
-      whatsappAdminSent,
-      message: `Task creato con successo${whatsappClientSent ? ' e messaggio inviato' : ''}`,
+      firestoreTicketCreated,
+      webhookSent,
+      message: `Task creato con successo`,
     });
 
   } catch (error: any) {
     console.error('Errore API create-task:', error);
-    
+
     return res.status(500).json({
       success: false,
       message: error.message || 'Errore durante la creazione del task',

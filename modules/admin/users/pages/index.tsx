@@ -52,6 +52,8 @@ export default function UsersManagementPage() {
   const [searchInput, setSearchInput] = useState('');
   const [filterField, setFilterField] = useState<'all' | 'name' | 'email'>('all');
   const pageSize = 10;
+  // Stato per modale errore autenticazione Firebase
+  const [authErrorModal, setAuthErrorModal] = useState(false);
 
   // Carica lista utenti con paginazione e filtri
   useEffect(() => {
@@ -70,7 +72,12 @@ export default function UsersManagementPage() {
       setTotalPages(data.totalPages);
       setTotalUsers(data.total);
     } catch (error: any) {
-      toast.error(error.message || 'Errore nel caricamento dei clienti');
+      // Gestione errore 401 Firebase
+      if (String(error.message).toLowerCase().includes('autenticazione richiesta') || String(error.message).includes('401')) {
+        setAuthErrorModal(true);
+      } else {
+        toast.error(error.message || 'Errore nel caricamento dei clienti');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -177,6 +184,19 @@ export default function UsersManagementPage() {
 
   return (
     <VStack gap={6} align="stretch">
+      {/* Modale errore autenticazione Firebase */}
+      <Modal
+        isOpen={authErrorModal}
+        onClose={() => setAuthErrorModal(false)}
+        title="Autenticazione richiesta"
+        size="md"
+      >
+        <VStack gap={4} align="center" py={4}>
+          <Text color="red.500" fontWeight="bold" fontSize="lg">Sessione scaduta o non autenticato</Text>
+          <Text fontSize="md" color="gray.700">Per continuare, effettua nuovamente il login su Firebase.</Text>
+          <Button colorScheme="red" onClick={() => { setAuthErrorModal(false); window.location.reload(); }}>Ricarica pagina</Button>
+        </VStack>
+      </Modal>
       {/* Header */}
       <Box>
         <HStack justify="space-between" mb={2}>

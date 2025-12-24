@@ -29,6 +29,7 @@ import { Ticket } from '../types';
 import { Modal } from '@/components/Modal';
 import { AsanaTaskDetail } from '@/types';
 import { toast } from 'react-toastify';
+import { formatDueDate } from '../hooks/useTickets';
 
 interface AsanaStory {
     gid: string;
@@ -58,6 +59,8 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
     const [attachments, setAttachments] = useState<File[]>([]);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [showExpandButton, setShowExpandButton] = useState(false);
+    const [firestoreData, setFirestoreData] = useState<any>(null);
+    const [loadingFirestore, setLoadingFirestore] = useState(false);
     const descriptionRef = useRef<HTMLDivElement>(null);
 
     // Carica dettaglio task quando si apre la modale
@@ -65,8 +68,25 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
         if (isOpen && ticket.id) {
             loadTaskDetail();
             loadComments();
+            loadFirestoreData();
         }
     }, [isOpen, ticket.id]);
+
+    // Carica dati Firestore del ticket
+    const loadFirestoreData = async () => {
+        try {
+            setLoadingFirestore(true);
+            const axios = require('axios');
+            // Recupera tutti i ticket Firestore dell'utente e filtra quello giusto
+            const response = await axios.get(`/api/firestore/tickets?userId=${ticket.clientId}`);
+            const allTickets = response.data || {};
+            setFirestoreData(allTickets[ticket.id] || null);
+        } catch (error) {
+            setFirestoreData(null);
+        } finally {
+            setLoadingFirestore(false);
+        }
+    };
 
     // Controlla se il contenuto della descrizione supera 200px
     useEffect(() => {
@@ -116,6 +136,8 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
         in_progress: 'blue.500',
         resolved: 'green.500',
         closed: 'gray.500',
+        // fallback per status custom
+        attesa: 'purple.500',
     };
 
     const statusLabels: Record<string, string> = {
@@ -123,6 +145,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
         in_progress: 'In Corso',
         resolved: 'Risolto',
         closed: 'Chiuso',
+        attesa: 'In Attesa',
     };
 
     const priorityColors: Record<string, string> = {
@@ -237,8 +260,13 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
             ) : (
                 <>
                     <HStack gap={2} mb={3}>
+                        {/* Badge stato (da Firestore se presente, altrimenti da Asana) */}
                         <Badge
-                            bg={taskDetail.completed ? 'green.500' : 'blue.400'}
+                            bg={
+                                firestoreData && firestoreData.status && statusColors[firestoreData.status.toLowerCase()]
+                                    ? statusColors[firestoreData.status.toLowerCase()]
+                                    : (taskDetail.completed ? 'green.500' : 'gray.400')
+                            }
                             color="white"
                             px={3}
                             py={1}
@@ -246,12 +274,16 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                             fontWeight="600"
                             fontSize="xs"
                         >
-                            {taskDetail.completed ? 'Completato' : 'Aperto'}
+                            {firestoreData && firestoreData.status && statusLabels[firestoreData.status.toLowerCase()]
+                                ? statusLabels[firestoreData.status.toLowerCase()]
+                                : (taskDetail.completed ? 'Completato' : 'Non Completato')}
                         </Badge>
+                        {/* Badge Priorità: sempre visibile */}
                         <Badge
                             colorScheme={
-                                ticket.priority === 'urgent' || ticket.priority === 'high' ? 'red' :
-                                ticket.priority === 'medium' ? 'blue' : 'gray'
+                                (firestoreData?.priority || ticket.priority) === 'urgent' ? 'red' :
+                                (firestoreData?.priority || ticket.priority) === 'high' ? 'orange' :
+                                (firestoreData?.priority || ticket.priority) === 'medium' ? 'yellow' : 'gray'
                             }
                             px={3}
                             py={1}
@@ -260,9 +292,84 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                             fontSize="xs"
                         >
                             Priorità: {
-                                ticket.priority === 'urgent' || ticket.priority === 'high' ? 'Alta' :
-                                ticket.priority === 'medium' ? 'Media' : 'Bassa'
+                                (firestoreData?.priority || ticket.priority) === 'urgent' ? 'Urgente' :
+                                (firestoreData?.priority || ticket.priority) === 'high' ? 'Alta' :
+                                (firestoreData?.priority || ticket.priority) === 'medium' ? 'Media' : 'Bassa'
                             }
+                        </Badge>
+                        {/* Badge Attesa risposta: sempre visibile se admin o client */}
+                        {((firestoreData?.waitingFor || ticket.waitingFor) === 'admin') && (
+                            <Badge
+                                bg="purple.100"
+                                color="purple.700"
+                                fontSize="xs"
+                                px={3}
+                                py={1}
+                                borderRadius="full"
+                                fontWeight="600"
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                            >
+                                <Icon as={FiClock} boxSize="12px" />
+                                Attesa Admin
+                            </Badge>
+                        )}
+                        {((firestoreData?.waitingFor || ticket.waitingFor) === 'client') && (
+                            <Badge
+                                bg="yellow.100"
+                                color="yellow.800"
+                                fontSize="xs"
+                                px={3}
+                                py={1}
+                                borderRadius="full"
+                                fontWeight="600"
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                            >
+                                <Icon as={FiClock} boxSize="12px" />
+                                Attesa Cliente
+                            </Badge>
+                        )}
+                        {/* Badge ultima risposta (se presente, da Firestore) */}
+                        {firestoreData && firestoreData.lastMessageBy && (
+                            <Badge
+                                bg={firestoreData.lastMessageBy === 'admin' ? 'purple.50' : 'yellow.50'}
+                                color={firestoreData.lastMessageBy === 'admin' ? 'purple.700' : 'yellow.800'}
+                                fontSize="xs"
+                                px={3}
+                                py={1}
+                                borderRadius="full"
+                                fontWeight="600"
+                                display="flex"
+                                alignItems="center"
+                                gap={1}
+                            >
+                                Ultima risposta: {firestoreData.lastMessageBy === 'admin' ? 'Admin' : 'Cliente'}
+                            </Badge>
+                        )}
+                        {/* Badge Data di Scadenza */}
+                        <Badge
+                            bg={formatDueDate(ticket.dueDate).colorScheme === 'red' ? 'red.100' :
+                                formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.100' :
+                                formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.100' :
+                                formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.100' : 'gray.100'}
+                            color={formatDueDate(ticket.dueDate).colorScheme === 'red' ? 'red.700' :
+                                   formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.700' :
+                                   formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.700' :
+                                   formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.700' : 'gray.700'}
+                            fontSize="xs"
+                            px={3}
+                            py={1}
+                            borderRadius="full"
+                            fontWeight="600"
+                            display="flex"
+                            alignItems="center"
+                            gap={1}
+                        >
+                            <Icon as={FiCalendar} boxSize="12px" />
+                            {formatDueDate(ticket.dueDate).text}
                         </Badge>
                         <Text fontSize="xs" color="gray.500" fontWeight="500">
                             Ticket #{taskDetail.gid}

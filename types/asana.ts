@@ -9,6 +9,7 @@ export interface AsanaTaskListItem {
   gid: string;
   name: string;
   completed: boolean;
+  due_on?: string; // Data di scadenza in formato YYYY-MM-DD
   memberships: Array<{
     section: {
       name: string;
@@ -40,6 +41,20 @@ export interface AsanaCustomField {
   is_formula_field: boolean;
   is_value_read_only: boolean;
   type: string;
+  enum_value?: {
+    gid: string;
+    color: string;
+    enabled: boolean;
+    name: string;
+    resource_type: string;
+  };
+  enum_options?: Array<{
+    gid: string;
+    color: string;
+    enabled: boolean;
+    name: string;
+    resource_type: string;
+  }>;
 }
 
 export interface AsanaUser {

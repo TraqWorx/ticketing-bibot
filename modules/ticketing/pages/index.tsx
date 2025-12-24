@@ -533,6 +533,20 @@ export default function TicketingPage() {
                         index={startIndex + index}
                       />
                     ))}
+                    {completedTickets.length === 0 && (
+                      <Box
+                        p={4}
+                        borderRadius="md"
+                        borderWidth="1px"
+                        borderStyle="dashed"
+                        borderColor="gray.300"
+                        textAlign="center"
+                      >
+                        <Text fontSize="xs" color="gray.400">
+                          Nessun ticket completato
+                        </Text>
+                      </Box>
+                    )}
                     {totalPages > 1 && (
                       <HStack justify="center" mt={2} gap={1}>
                         <Button
@@ -577,7 +591,6 @@ export default function TicketingPage() {
               const startIndex = (currentPage - 1) * itemsPerPage;
               const endIndex = startIndex + itemsPerPage;
               const paginatedTickets = completedTickets.slice(startIndex, endIndex);
-              
               return (
                 <Box flex="1" w="100%">
                   <HStack mb={3} gap={2}>
@@ -596,6 +609,20 @@ export default function TicketingPage() {
                         index={startIndex + index}
                       />
                     ))}
+                    {completedTickets.length === 0 && (
+                      <Box
+                        p={4}
+                        borderRadius="md"
+                        borderWidth="1px"
+                        borderStyle="dashed"
+                        borderColor="gray.300"
+                        textAlign="center"
+                      >
+                        <Text fontSize="xs" color="gray.400">
+                          Nessun ticket completato
+                        </Text>
+                      </Box>
+                    )}
                     {totalPages > 1 && (
                       <HStack justify="center" mt={2} gap={1}>
                         <Button
