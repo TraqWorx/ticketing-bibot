@@ -58,6 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const creatorId = Array.isArray(fields.creatorId) ? fields.creatorId[0] : fields.creatorId;
     const creatorName = Array.isArray(fields.creatorName) ? fields.creatorName[0] : fields.creatorName;
     const creatorPhone = Array.isArray(fields.creatorPhone) ? fields.creatorPhone[0] : fields.creatorPhone;
+    const creatorEmail = Array.isArray(fields.creatorEmail) ? fields.creatorEmail[0] : fields.creatorEmail;
     const ghlContactId = Array.isArray(fields.ghlContactId) ? fields.ghlContactId[0] : fields.ghlContactId;
 
     // Validazione input
@@ -140,6 +141,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         priority,
         clientName: creatorName,
         clientPhone: creatorPhone,
+        clientEmail: creatorEmail || undefined,
       });
       firestoreTicketCreated = true;
 

@@ -76,6 +76,9 @@ export interface FirestoreTicket {
   
   /** Telefono del cliente (cache) */
   clientPhone?: string;
+  
+  /** Email del cliente (cache) */
+  clientEmail?: string;
 }
 
 /**
@@ -89,6 +92,7 @@ export interface CreateTicketPayload {
   priority: 'high' | 'medium' | 'low';
   clientName: string;
   clientPhone: string;
+  clientEmail?: string;
 }
 
 /**
@@ -145,6 +149,10 @@ export interface GHLTicketRepliedPayload extends GHLWebhookPayload {
     ticketId: string;
     repliedAt: string;
     repliedBy: MessageAuthor;
+    clientName?: string;
+    clientPhone?: string;
+    clientEmail?: string;
+    priority?: string;
   };
 }
 

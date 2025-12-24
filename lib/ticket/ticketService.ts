@@ -30,7 +30,7 @@ const TICKETS_COLLECTION = 'tickets';
  * Chiamato dopo la creazione del task su Asana
  */
 export async function createTicket(payload: CreateTicketPayload): Promise<FirestoreTicket> {
-  const { ticketId, clientId, ghlContactId, title, priority, clientName, clientPhone } = payload;
+  const { ticketId, clientId, ghlContactId, title, priority, clientName, clientPhone, clientEmail } = payload;
 
   const now = FieldValue.serverTimestamp();
   
@@ -49,6 +49,7 @@ export async function createTicket(payload: CreateTicketPayload): Promise<Firest
     priority,
     clientName,
     clientPhone,
+    clientEmail,
   };
 
   await adminDb

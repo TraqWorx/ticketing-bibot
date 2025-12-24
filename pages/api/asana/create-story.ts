@@ -80,9 +80,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
           const fileBuffer = await fs.readFile(file.filepath);
           let summary = '';
-          let uploaded = null;
           // Upload su Asana
-          uploaded = await uploadAsanaAttachment(
+          let uploaded = await uploadAsanaAttachment(
             taskGid,
             fileBuffer,
             file.originalFilename || 'attachment',
@@ -117,7 +116,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (audioSummaries.length > 0) {
       commentText = audioSummaries.join('\n\n');
     }
-    const result = await createTaskStory(taskGid, commentText);
+    // Commento creato per risposta del cliente
+    const result = await createTaskStory(taskGid, commentText, true);
 
     // STEP 3: Aggiorna stato ticket su Firestore (client ha risposto)
     let firestoreUpdated = false;
@@ -142,6 +142,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         clientId: ticket.clientId,
         ghlContactId: ticket.ghlContactId,
         ticketId: taskGid,
+        clientName: ticket.clientName,
+        clientPhone: ticket.clientPhone,
+        clientEmail: ticket.clientEmail,
+        priority: ticket.priority,
       });
     }
 

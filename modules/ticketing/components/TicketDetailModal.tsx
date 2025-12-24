@@ -31,6 +31,27 @@ import { AsanaTaskDetail } from '@/types';
 import { toast } from 'react-toastify';
 import { formatDueDate } from '../hooks/useTickets';
 
+// Colore custom per badge priorità
+const getPriorityBg = (priority?: string) => {
+  switch (priority) {
+    case 'low': return 'green.100'; // verdino
+    case 'medium': return 'yellow.100'; // giallino
+    case 'high': return 'red.200'; // rosso chiaro
+    case 'urgent': return 'red.400'; // rosso acceso
+    default: return 'gray.100';
+  }
+};
+
+const getPriorityColor = (priority?: string) => {
+  switch (priority) {
+    case 'low': return 'green.700';
+    case 'medium': return 'yellow.800';
+    case 'high': return 'red.700';
+    case 'urgent': return 'white';
+    default: return 'gray.700';
+  }
+};
+
 interface AsanaStory {
     gid: string;
     created_at: string;
@@ -120,7 +141,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
             setLoadingComments(true);
             const axios = require('axios');
             const response = await axios.get(`/api/asana/task-stories?taskGid=${ticket.id}`);
-            
+
             // Filtra solo i commenti (type === 'comment')
             const commentStories = (response.data.data || []).filter((story: AsanaStory) => story.type === 'comment');
             setComments(commentStories);
@@ -174,10 +195,10 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
         if (diffMins < 1) return 'Adesso';
         if (diffMins < 60) return `${diffMins} min fa`;
         if (diffHours < 24) return `${diffHours} ore fa`;
-        
+
         // Se è più di 24 ore, mostra data e ora
-        return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ', ' + 
-               d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ', ' +
+            d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
     };
 
     const getInitials = (name?: string) => {
@@ -199,7 +220,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
             const formData = new FormData();
             formData.append('taskGid', ticket.id);
             formData.append('text', newComment);
-            
+
             // Aggiungi tutti gli allegati
             attachments.forEach((file) => {
                 formData.append('attachments', file);
@@ -233,8 +254,8 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
             await Promise.all([loadComments(), loadTaskDetail()]);
         } catch (error: any) {
             console.error('Error adding comment:', error);
-            const errorMessage = error.response?.data?.message 
-                || error.message 
+            const errorMessage = error.response?.data?.message
+                || error.message
                 || 'Errore durante l\'invio del commento';
             toast.error(errorMessage, { autoClose: 5000 });
         } finally {
@@ -280,11 +301,8 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                         </Badge>
                         {/* Badge Priorità: sempre visibile */}
                         <Badge
-                            colorScheme={
-                                (firestoreData?.priority || ticket.priority) === 'urgent' ? 'red' :
-                                (firestoreData?.priority || ticket.priority) === 'high' ? 'orange' :
-                                (firestoreData?.priority || ticket.priority) === 'medium' ? 'yellow' : 'gray'
-                            }
+                            bg={getPriorityBg(firestoreData?.priority || ticket.priority)}
+                            color={getPriorityColor(firestoreData?.priority || ticket.priority)}
                             px={3}
                             py={1}
                             borderRadius="full"
@@ -293,15 +311,15 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                         >
                             Priorità: {
                                 (firestoreData?.priority || ticket.priority) === 'urgent' ? 'Urgente' :
-                                (firestoreData?.priority || ticket.priority) === 'high' ? 'Alta' :
-                                (firestoreData?.priority || ticket.priority) === 'medium' ? 'Media' : 'Bassa'
+                                    (firestoreData?.priority || ticket.priority) === 'high' ? 'Alta' :
+                                        (firestoreData?.priority || ticket.priority) === 'medium' ? 'Media' : 'Bassa'
                             }
                         </Badge>
                         {/* Badge Attesa risposta: sempre visibile se admin o client */}
                         {((firestoreData?.waitingFor || ticket.waitingFor) === 'admin') && (
                             <Badge
-                                bg="purple.100"
-                                color="purple.700"
+                                bg="gray.100"
+                                color="gray.700"
                                 fontSize="xs"
                                 px={3}
                                 py={1}
@@ -312,7 +330,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                 gap={1}
                             >
                                 <Icon as={FiClock} boxSize="12px" />
-                                Attesa Admin
+                                Attesa risposta supporto
                             </Badge>
                         )}
                         {((firestoreData?.waitingFor || ticket.waitingFor) === 'client') && (
@@ -329,7 +347,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                 gap={1}
                             >
                                 <Icon as={FiClock} boxSize="12px" />
-                                Attesa Cliente
+                                Attesa risposta cliente
                             </Badge>
                         )}
                         {/* Badge ultima risposta (se presente, da Firestore) */}
@@ -353,12 +371,12 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                         <Badge
                             bg={formatDueDate(ticket.dueDate).colorScheme === 'red' ? 'red.100' :
                                 formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.100' :
-                                formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.100' :
-                                formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.100' : 'gray.100'}
+                                    formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.100' :
+                                        formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.100' : 'gray.100'}
                             color={formatDueDate(ticket.dueDate).colorScheme === 'red' ? 'red.700' :
-                                   formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.700' :
-                                   formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.700' :
-                                   formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.700' : 'gray.700'}
+                                formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.700' :
+                                    formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.700' :
+                                        formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.700' : 'gray.700'}
                             fontSize="xs"
                             px={3}
                             py={1}
@@ -398,7 +416,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                         {taskDetail.notes}
                                     </Text>
                                 )}
-                                
+
                                 {/* Allegati del Task */}
                                 {taskDetail.attachments && taskDetail.attachments.length > 0 && (
                                     <Box mt={2}>
@@ -423,9 +441,9 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                                     title={attachment.name}
                                                     gap={2}
                                                 >
-                                                    <Badge 
-                                                        colorScheme="blue" 
-                                                        fontSize="10px" 
+                                                    <Badge
+                                                        colorScheme="blue"
+                                                        fontSize="10px"
                                                         borderRadius="full"
                                                         minW="20px"
                                                         h="20px"
@@ -437,9 +455,9 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                                         {index + 1}
                                                     </Badge>
                                                     <Icon as={FiPaperclip} color="blue.500" boxSize="14px" flexShrink={0} />
-                                                    <Text 
-                                                        fontSize="sm" 
-                                                        color="blue.600" 
+                                                    <Text
+                                                        fontSize="sm"
+                                                        color="blue.600"
                                                         fontWeight="500"
                                                         whiteSpace="nowrap"
                                                         overflow="hidden"
@@ -455,7 +473,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                     </Box>
                                 )}
                             </VStack>
-                            
+
                             {/* Pulsante Espandi/Riduci se il contenuto è troppo lungo */}
                             {!isDescriptionExpanded && showExpandButton && (
                                 <Flex
@@ -484,7 +502,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                     </Button>
                                 </Flex>
                             )}
-                            
+
                             {/* Pulsante Riduci se espanso */}
                             {isDescriptionExpanded && showExpandButton && (
                                 <Flex justify="center" mt={3}>
@@ -507,9 +525,9 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
 
                         {/* Area Chat Scrollabile */}
                         <Box
-                        flex="1"
-                        minH="200px"
-                        overflowY="auto"
+                            flex="1"
+                            minH="200px"
+                            overflowY="auto"
                             mb={4}
                             px={2}
                             css={{
@@ -613,9 +631,9 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                     color="gray.500"
                                     onClick={loadComments}
                                     loading={loadingComments}
-                            >
-                                <Icon as={FiRefreshCw} mr={1} />
-                                Aggiorna
+                                >
+                                    <Icon as={FiRefreshCw} mr={1} />
+                                    Aggiorna
                                 </Button>
                             </HStack>
 
@@ -666,7 +684,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                         disabled={taskDetail.completed}
                                     />
                                 </Box>
-                                
+
                                 {/* Mostra allegati selezionati */}
                                 {attachments.length > 0 && (
                                     <HStack gap={2} w="100%" flexWrap="wrap">
@@ -692,7 +710,7 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                         ))}
                                     </HStack>
                                 )}
-                                
+
                                 <Flex justify="flex-end" w="100%" mt={2}>
                                     <Button
                                         size="sm"
@@ -705,9 +723,9 @@ export const TicketDetailModal = ({ ticket, isOpen, onClose }: TicketDetailModal
                                         disabled={!newComment.trim() || taskDetail.completed}
                                         borderRadius="xl"
                                         px={6}
-                                >
-                                    <Icon as={FiMessageSquare} mr={1} />
-                                    Invia
+                                    >
+                                        <Icon as={FiMessageSquare} mr={1} />
+                                        Invia
                                     </Button>
                                 </Flex>
                             </VStack>

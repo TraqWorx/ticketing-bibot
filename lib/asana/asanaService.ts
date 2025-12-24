@@ -328,7 +328,7 @@ export async function getTaskStories(taskGid: string): Promise<any> {
 /**
  * Crea un nuovo commento su un task
  */
-export async function createTaskStory(taskGid: string, text: string): Promise<any> {
+export async function createTaskStory(taskGid: string, text: string, isClientReply: boolean = false): Promise<any> {
     if (!process.env.ASANA_API_BASE_URL) {
         throw new Error('ASANA_API_BASE_URL non configurato nel .env');
     }
@@ -337,11 +337,17 @@ export async function createTaskStory(taskGid: string, text: string): Promise<an
     }
 
     try {
-        const body = {
-            data: {
-                text,
-            },
+        const body: any = {
+            data: {},
         };
+
+        // Se è una risposta del cliente, aggiungi un marcatore invisibile
+        const marker = '\u200B'; // Zero-width space
+        if (isClientReply) {
+            body.data.text = `${marker}${text}`;
+        } else {
+            body.data.text = text;
+        }
 
         const axios = require('axios');
         const response = await axios.post(
@@ -359,5 +365,35 @@ export async function createTaskStory(taskGid: string, text: string): Promise<an
     } catch (error: any) {
         console.error('Errore creazione commento:', error);
         throw new Error(error.message || 'Errore durante la creazione del commento');
+    }
+}
+
+/**
+ * Recupera i dettagli di una story (commento) da Asana
+ */
+export async function getStory(storyGid: string): Promise<any> {
+    if (!process.env.ASANA_API_BASE_URL) {
+        throw new Error('ASANA_API_BASE_URL non configurato nel .env');
+    }
+    if (!process.env.ASANA_ACCESS_TOKEN) {
+        throw new Error('ASANA_ACCESS_TOKEN non configurato nel .env');
+    }
+
+    try {
+        const axios = require('axios');
+        const response = await axios.get(
+            `${process.env.ASANA_API_BASE_URL}/stories/${storyGid}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error: any) {
+        console.error('Errore recupero story:', error);
+        throw new Error(error.message || 'Errore durante il recupero della story');
     }
 }

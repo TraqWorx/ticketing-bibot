@@ -15,37 +15,37 @@
 
 import { Box, Badge, Text, HStack, VStack, Flex, Icon, Tooltip } from '@chakra-ui/react';
 import { FiMessageSquare, FiPaperclip, FiCalendar, FiMoreVertical, FiClock } from 'react-icons/fi';
-  // Badge Priorità
-  const getPriorityLabel = (priority?: string) => {
-    switch (priority) {
-      case 'urgent': return 'Urgente';
-      case 'high': return 'Alta';
-      case 'medium': return 'Media';
-      case 'low': return 'Bassa';
-      default: return '-';
-    }
-  };
+// Badge Priorità
+const getPriorityLabel = (priority?: string) => {
+  switch (priority) {
+    case 'urgent': return 'Urgente';
+    case 'high': return 'Alta';
+    case 'medium': return 'Media';
+    case 'low': return 'Bassa';
+    default: return '-';
+  }
+};
 
-  // Colore custom per badge priorità
-  const getPriorityBg = (priority?: string) => {
-    switch (priority) {
-      case 'low': return 'green.100'; // verdino
-      case 'medium': return 'yellow.100'; // giallino
-      case 'high': return 'red.200'; // rosso chiaro
-      case 'urgent': return 'red.400'; // rosso acceso
-      default: return 'gray.100';
-    }
-  };
+// Colore custom per badge priorità
+const getPriorityBg = (priority?: string) => {
+  switch (priority) {
+    case 'low': return 'green.100'; // verdino
+    case 'medium': return 'yellow.100'; // giallino
+    case 'high': return 'red.200'; // rosso chiaro
+    case 'urgent': return 'red.400'; // rosso acceso
+    default: return 'gray.100';
+  }
+};
 
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'low': return 'green.700';
-      case 'medium': return 'yellow.800';
-      case 'high': return 'red.700';
-      case 'urgent': return 'white';
-      default: return 'gray.700';
-    }
-  };
+const getPriorityColor = (priority?: string) => {
+  switch (priority) {
+    case 'low': return 'green.700';
+    case 'medium': return 'yellow.800';
+    case 'high': return 'red.700';
+    case 'urgent': return 'white';
+    default: return 'gray.700';
+  }
+};
 import { useRouter } from 'next/router';
 import { Ticket, TicketStatus } from '../types';
 import { formatDueDate } from '../hooks/useTickets';
@@ -178,6 +178,23 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
               {/* Badge solo Attesa Admin */}
               {ticket.waitingFor === 'admin' && (
                 <Badge
+                  bg="gray.100"
+                  color="gray.700"
+                  fontSize="10px"
+                  px={2}
+                  py={0.5}
+                  borderRadius="full"
+                  fontWeight="600"
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                >
+                  <Icon as={FiClock} boxSize="10px" />
+                  Attesa risposta supporto
+                </Badge>
+              )}
+              {ticket.waitingFor === 'client' && (
+                <Badge
                   bg="purple.100"
                   color="purple.700"
                   fontSize="10px"
@@ -190,19 +207,19 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
                   gap={1}
                 >
                   <Icon as={FiClock} boxSize="10px" />
-                  Attesa Admin
+                  Attesa risposta cliente
                 </Badge>
               )}
               {/* Badge Data di Scadenza */}
               <Badge
                 bg={formatDueDate(ticket.dueDate).colorScheme === 'red' ? 'red.100' :
-                    formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.100' :
+                  formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.100' :
                     formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.100' :
-                    formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.100' : 'gray.100'}
+                      formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.100' : 'gray.100'}
                 color={formatDueDate(ticket.dueDate).colorScheme === 'red' ? 'red.700' :
-                       formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.700' :
-                       formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.700' :
-                       formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.700' : 'gray.700'}
+                  formatDueDate(ticket.dueDate).colorScheme === 'orange' ? 'orange.700' :
+                    formatDueDate(ticket.dueDate).colorScheme === 'yellow' ? 'yellow.700' :
+                      formatDueDate(ticket.dueDate).colorScheme === 'blue' ? 'blue.700' : 'gray.700'}
                 fontSize="10px"
                 px={2}
                 py={0.5}

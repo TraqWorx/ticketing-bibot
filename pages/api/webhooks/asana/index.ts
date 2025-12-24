@@ -17,10 +17,10 @@
  * NOTA: Asana richiede handshake iniziale con X-Hook-Secret
  */
 
+import { sendTicketClosedEvent, sendTicketRepliedByAdminEvent } from '@/lib/ghl/ghlService';
+import { closeTicket, getTicket, updateTicketOnReply } from '@/lib/ticket/ticketService';
+import { getStory } from '@/lib/asana/asanaService';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { sendTicketRepliedByAdminEvent, sendTicketClosedEvent } from '@/lib/ghl/ghlService';
-import { getClientNewReplyMessage, getClientTicketClosedMessage } from '@/lib/ghl/messages';
-import { updateTicketOnReply, getTicket, closeTicket } from '@/lib/ticket/ticketService';
 
 // Disabilita body parser per ricevere raw body
 export const config = {
@@ -48,7 +48,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!events || !Array.isArray(events)) {
       return res.status(400).json({ message: 'Invalid webhook payload' });
     }
-
 
     for (const event of events) {
       await processAsanaEvent(event);
@@ -105,12 +104,17 @@ async function handleNewStory(event: any): Promise<void> {
       return;
     }
 
-    // Se il commento è stato aggiunto dal cliente (via webapp), ignora
-    // Lo determiniamo controllando se waiting_for è già "admin"
-    // In teoria dovremmo verificare l'autore del commento su Asana
-    // Ma per semplicità assumiamo che se arriva da webhook è dell'admin
+    // Recupera i dettagli della story per controllare se è una risposta del cliente
+    const storyDetails = await getStory(storyGid);
+    const storyText = storyDetails?.data?.text || '';
+
+    // Se il testo inizia con il marcatore invisibile, è una risposta del cliente creata dal sistema, ignora
+    const marker = '\u200B'; // Zero-width space
+    if (storyText.startsWith(marker)) {
+      return;
+    }
     
-    // Aggiorna Firestore
+    // È una risposta manuale dell'admin su Asana
     await updateTicketOnReply({
       ticketId: taskGid,
       repliedBy: 'admin',
@@ -118,18 +122,6 @@ async function handleNewStory(event: any): Promise<void> {
 
     // Invia notifica al cliente via GHL
     if (ticket.ghlContactId) {
-      try {
-        const clientMessage = getClientNewReplyMessage({
-          clientName: ticket.clientName || 'Cliente',
-          ticketTitle: ticket.title || 'Ticket',
-          ticketId: taskGid,
-        });
-
-        // Notifica utente gestita da GHL workflow
-      } catch (msgError: any) {
-        console.error('[Asana Webhook] Errore invio messaggio cliente:', msgError.message);
-      }
-
       // Invia webhook evento a GHL
       await sendTicketRepliedByAdminEvent({
         clientId: ticket.clientId,
@@ -172,18 +164,6 @@ async function handleTaskChanged(event: any): Promise<void> {
 
     // Invia notifica al cliente
     if (ticket.ghlContactId) {
-      try {
-        const closedMessage = getClientTicketClosedMessage({
-          clientName: ticket.clientName || 'Cliente',
-          ticketTitle: ticket.title || 'Ticket',
-          ticketId: taskGid,
-        });
-
-        // Notifica chiusura gestita da GHL workflow
-      } catch (msgError: any) {
-        console.error('[Asana Webhook] Errore invio messaggio chiusura:', msgError.message);
-      }
-
       // Invia webhook evento a GHL
       await sendTicketClosedEvent({
         clientId: ticket.clientId,

@@ -354,6 +354,10 @@ export async function sendTicketRepliedByClientEvent(params: {
     clientId: string;
     ghlContactId: string;
     ticketId: string;
+    clientName?: string;
+    clientPhone?: string;
+    clientEmail?: string;
+    priority?: string;
 }): Promise<boolean> {
     const webhookUrl = process.env.GHL_WEBHOOK_CLIENT_REPLIED;
 
@@ -366,6 +370,10 @@ export async function sendTicketRepliedByClientEvent(params: {
             ticketId: params.ticketId,
             repliedAt: new Date().toISOString(),
             repliedBy: 'client',
+            clientName: params.clientName,
+            clientPhone: params.clientPhone,
+            clientEmail: params.clientEmail,
+            priority: params.priority,
         },
     };
 

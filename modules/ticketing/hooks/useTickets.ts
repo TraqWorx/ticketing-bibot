@@ -8,8 +8,6 @@
 import { useState, useEffect } from 'react';
 import { Ticket, TicketStatus } from '../types';
 import { useAuth } from '@/contexts/AuthContext';
-import { AsanaTaskListItem } from '@/types';
-import { TicketPriority } from '../../../types/ticket';
 import axios from '@/utils/axios';
 
 interface PaginationState {
@@ -49,77 +47,9 @@ export const useTickets = () => {
         });
       }
 
-      // Chiamata API per recuperare tutti i task Asana dell'utente
-      const response = await axios.get(`/api/asana/user-tasks?userId=${user.id}`);
-      
-      // Recupera i dati aggiuntivi da Firestore per tutti i ticket
-      const firestoreResponse = await axios.get(`/api/firestore/tickets?userId=${user.id}`);
-      const firestoreTickets: Record<string, any> = firestoreResponse.data || {};
-
-      // Mappa i task Asana al formato Ticket locale, arricchendo con i dati di Firestore
-      const asanaTasks: AsanaTaskListItem[] = response.data.data || [];
-      const mappedTickets: Ticket[] = asanaTasks.map((task) => {
-        const sectionName = task.memberships?.[0]?.section?.name?.toLowerCase() || '';
-        let status = TicketStatus.OPEN;
-        if (sectionName.includes('lavorazione') || sectionName.includes('in progress')) {
-          status = TicketStatus.IN_PROGRESS;
-        } else if (sectionName.includes('completati') || sectionName.includes('completed') || sectionName.includes('done')) {
-          status = TicketStatus.RESOLVED;
-        }
-
-        // Dati da Firestore
-        const firestoreData = firestoreTickets[task.gid] || {};
-
-        // Conversione sicura della priorità Firestore in enum
-        let priority: TicketPriority = TicketPriority.MEDIUM;
-        if (firestoreData.priority) {
-          const p = firestoreData.priority.toString().toLowerCase();
-          if (p === 'low') priority = TicketPriority.LOW;
-          else if (p === 'medium') priority = TicketPriority.MEDIUM;
-          else if (p === 'high') priority = TicketPriority.HIGH;
-          else if (p === 'urgent') priority = TicketPriority.URGENT;
-        } else {
-          // fallback mapping da Asana
-          const priorityCustomField = (task as any).custom_fields?.find(
-            (cf: any) => cf.name?.toLowerCase() === 'task_priority'
-          );
-          let priorityValue = (
-            priorityCustomField?.display_value || 
-            priorityCustomField?.enum_value?.name || 
-            'media'
-          ).toString().trim().toLowerCase();
-          if (["alta", "high", "urgente", "urgent"].includes(priorityValue)) {
-            priority = TicketPriority.URGENT;
-          } else if (["media", "medium"].includes(priorityValue)) {
-            priority = TicketPriority.MEDIUM;
-          } else if (["bassa", "low"].includes(priorityValue)) {
-            priority = TicketPriority.LOW;
-          }
-        }
-
-        return {
-          id: task.gid,
-          title: firestoreData.title || task.name,
-          description: '',
-          status, // Usa sempre lo status calcolato da Asana
-          priority,
-          createdAt: firestoreData.createdAt ? new Date(firestoreData.createdAt) : new Date(),
-          updatedAt: firestoreData.lastActivityAt ? new Date(firestoreData.lastActivityAt) : new Date(),
-          dueDate: task.due_on ? new Date(task.due_on) : undefined,
-          tags: [],
-          commentsCount: 0,
-          attachmentsCount: 0,
-          clientId: firestoreData.clientId,
-          clientName: firestoreData.clientName,
-          clientPhone: firestoreData.clientPhone,
-          ghlContactId: firestoreData.ghlContactId,
-          waitingFor: firestoreData.waitingFor,
-        };
-      });
-
-
-      // Ordina i ticket solo per data di creazione (più recenti prima)
-      mappedTickets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      // Chiamata API unificata per recuperare tutti i ticket dell'utente
+      const response = await axios.get(`/api/tickets/user-tickets?userId=${user.id}`);
+      const mappedTickets: Ticket[] = response.data.data || [];
 
       setTickets(mappedTickets);
     } catch (err: any) {
@@ -176,7 +106,7 @@ export const useTickets = () => {
 export const formatDueDate = (dueDate?: Date): { text: string; colorScheme: string } => {
   if (!dueDate) {
     return {
-      text: 'Data di consegna non ancora definita',
+      text: 'Data consegna non ancora definita',
       colorScheme: 'gray'
     };
   }

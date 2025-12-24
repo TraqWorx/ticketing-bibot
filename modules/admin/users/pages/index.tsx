@@ -293,6 +293,7 @@ export default function UsersManagementPage() {
           firstName: ticketUserTarget.firstName,
           lastName: ticketUserTarget.lastName,
           phone: ticketUserTarget.phone,
+          email: ticketUserTarget.email,
           ghl_contact_id: ticketUserTarget.ghl_contact_id,
         } : undefined}
       />

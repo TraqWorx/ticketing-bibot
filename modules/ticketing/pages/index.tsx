@@ -67,11 +67,12 @@ export default function TicketingPage() {
     }
   }, [showFilterMenu]);
 
-  // Filtra tickets per titolo e status
+  // Filtra tickets per titolo, ID e status
   const filteredTickets = tickets.filter(ticket => {
-    // Filtro per ricerca
+    // Filtro per ricerca (titolo o ID)
     const matchesSearch = searchQuery
-      ? ticket.title.toLowerCase().includes(searchQuery.toLowerCase())
+      ? ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.id.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
     
     // Filtro per status basato sulle sezioni Asana
@@ -296,7 +297,7 @@ export default function TicketingPage() {
           pointerEvents="none"
         />
         <Input
-          placeholder="Cerca per titolo..."
+          placeholder="Cerca per titolo o ID ticket..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           borderRadius="lg"
@@ -347,164 +348,182 @@ export default function TicketingPage() {
             </Text>
           </Flex>
         ) : (
-          <Stack 
-            direction={{ base: 'column', md: 'row' }} 
-            gap={{ base: 6, md: 4 }} 
-            align="flex-start"
-          >
-            {/* Colonna Aperti */}
-            {statusFilters.open ? (() => {
-              const openTickets = filteredTickets.filter(t => t.status === TicketStatus.OPEN);
-              const totalPages = getTotalPages('open', openTickets.length);
-              const currentPage = pagination.open.currentPage;
-              const startIndex = (currentPage - 1) * itemsPerPage;
-              const endIndex = startIndex + itemsPerPage;
-              const paginatedTickets = openTickets.slice(startIndex, endIndex);
-              
-              return (
-                <Box flex="1" w="100%">
-                  <HStack mb={3} gap={2}>
-                    <Text fontSize="xs" fontWeight="700" color="blue.600" textTransform="uppercase">
-                      Aperti
-                    </Text>
-                    <Badge colorScheme="blue" fontSize="xs">
-                      {openTickets.length}
-                    </Badge>
-                  </HStack>
-                  <VStack align="stretch" gap={2}>
-                    {paginatedTickets.map((ticket, index) => (
-                      <TicketCard
-                        key={ticket.id}
-                        ticket={ticket}
-                        index={startIndex + index}
-                      />
-                    ))}
-                    {openTickets.length === 0 && (
-                      <Box
-                        p={4}
-                        borderRadius="md"
-                        borderWidth="1px"
-                        borderStyle="dashed"
-                        borderColor="gray.300"
-                        textAlign="center"
-                      >
-                        <Text fontSize="xs" color="gray.400">
-                          Nessun ticket aperto
+          (() => {
+            // Calcola quante colonne sono attive per la responsività desktop
+            const activeColumnsCount = Object.values(statusFilters).filter(Boolean).length;
+            
+            return (
+              <Box
+                display={{ base: 'block', md: 'grid' }}
+                gridTemplateColumns={{ 
+                  md: activeColumnsCount === 1 ? '1fr' : 
+                      activeColumnsCount === 2 ? '1fr 1fr' : 
+                      '1fr 1fr 1fr' 
+                }}
+                gap={{ base: 6, md: 4 }}
+                alignItems="start"
+              >
+                {/* Colonna Aperti */}
+                {statusFilters.open ? (() => {
+                  const openTickets = filteredTickets.filter(t => t.status === TicketStatus.OPEN);
+                  const totalPages = getTotalPages('open', openTickets.length);
+                  const currentPage = pagination.open.currentPage;
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedTickets = openTickets.slice(startIndex, endIndex);
+                  
+                  return (
+                    <Box 
+                      display="flex"
+                      flexDirection="column"
+                      minH="200px"
+                    >
+                      <HStack mb={3} gap={2}>
+                        <Text fontSize="xs" fontWeight="700" color="blue.600" textTransform="uppercase">
+                          Aperti
                         </Text>
-                      </Box>
-                    )}
-                    {totalPages > 1 && (
-                      <HStack justify="center" mt={2} gap={1}>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          disabled={currentPage === 1}
-                          onClick={() => setPage('open', currentPage - 1)}
-                        >
-                          <Icon as={FiChevronLeft} />
-                        </Button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                          <Button
-                            key={page}
-                            size="xs"
-                            variant={page === currentPage ? 'solid' : 'ghost'}
-                            colorScheme={page === currentPage ? 'blue' : 'gray'}
-                            onClick={() => setPage('open', page)}
-                          >
-                            {page}
-                          </Button>
-                        ))}
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          disabled={currentPage === totalPages}
-                          onClick={() => setPage('open', currentPage + 1)}
-                        >
-                          <Icon as={FiChevronRight} />
-                        </Button>
+                        <Badge colorScheme="blue" fontSize="xs">
+                          {openTickets.length}
+                        </Badge>
                       </HStack>
-                    )}
-                  </VStack>
-                </Box>
-              );
-            })() : null}
+                      <VStack align="stretch" gap={2}>
+                        {paginatedTickets.map((ticket, index) => (
+                          <TicketCard
+                            key={ticket.id}
+                            ticket={ticket}
+                            index={startIndex + index}
+                          />
+                        ))}
+                        {openTickets.length === 0 && (
+                          <Box
+                            p={4}
+                            borderRadius="md"
+                            borderWidth="1px"
+                            borderStyle="dashed"
+                            borderColor="gray.300"
+                            textAlign="center"
+                          >
+                            <Text fontSize="xs" color="gray.400">
+                              Nessun ticket aperto
+                            </Text>
+                          </Box>
+                        )}
+                        {totalPages > 1 && (
+                          <HStack justify="center" mt={2} gap={1}>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              disabled={currentPage === 1}
+                              onClick={() => setPage('open', currentPage - 1)}
+                            >
+                              <Icon as={FiChevronLeft} />
+                            </Button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                size="xs"
+                                variant={page === currentPage ? 'solid' : 'ghost'}
+                                colorScheme={page === currentPage ? 'blue' : 'gray'}
+                                onClick={() => setPage('open', page)}
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              disabled={currentPage === totalPages}
+                              onClick={() => setPage('open', currentPage + 1)}
+                            >
+                              <Icon as={FiChevronRight} />
+                            </Button>
+                          </HStack>
+                        )}
+                      </VStack>
+                    </Box>
+                  );
+                })() : null}
 
-            {/* Colonna In Lavorazione */}
-            {statusFilters.inProgress ? (() => {
-              const inProgressTickets = filteredTickets.filter(t => t.status === TicketStatus.IN_PROGRESS);
-              const totalPages = getTotalPages('inProgress', inProgressTickets.length);
-              const currentPage = pagination.inProgress.currentPage;
-              const startIndex = (currentPage - 1) * itemsPerPage;
-              const endIndex = startIndex + itemsPerPage;
-              const paginatedTickets = inProgressTickets.slice(startIndex, endIndex);
-              
-              return (
-                <Box flex="1" w="100%">
-                  <HStack mb={3} gap={2}>
-                    <Text fontSize="xs" fontWeight="700" color="orange.600" textTransform="uppercase">
-                      In Lavorazione
-                    </Text>
-                    <Badge colorScheme="orange" fontSize="xs">
-                      {inProgressTickets.length}
-                    </Badge>
-                  </HStack>
-                  <VStack align="stretch" gap={2}>
-                    {paginatedTickets.map((ticket, index) => (
-                      <TicketCard
-                        key={ticket.id}
-                        ticket={ticket}
-                        index={startIndex + index}
-                      />
-                    ))}
-                    {inProgressTickets.length === 0 && (
-                      <Box
-                        p={4}
-                        borderRadius="md"
-                        borderWidth="1px"
-                        borderStyle="dashed"
-                        borderColor="gray.300"
-                        textAlign="center"
-                      >
-                        <Text fontSize="xs" color="gray.400">
-                          Nessun ticket in lavorazione
+                {/* Colonna In Lavorazione */}
+                {statusFilters.inProgress ? (() => {
+                  const inProgressTickets = filteredTickets.filter(t => t.status === TicketStatus.IN_PROGRESS);
+                  const totalPages = getTotalPages('inProgress', inProgressTickets.length);
+                  const currentPage = pagination.inProgress.currentPage;
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedTickets = inProgressTickets.slice(startIndex, endIndex);
+                  
+                  return (
+                    <Box 
+                      display="flex"
+                      flexDirection="column"
+                      minH="200px"
+                    >
+                      <HStack mb={3} gap={2}>
+                        <Text fontSize="xs" fontWeight="700" color="orange.600" textTransform="uppercase">
+                          In Lavorazione
                         </Text>
-                      </Box>
-                    )}
-                    {totalPages > 1 && (
-                      <HStack justify="center" mt={2} gap={1}>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          disabled={currentPage === 1}
-                          onClick={() => setPage('inProgress', currentPage - 1)}
-                        >
-                          <Icon as={FiChevronLeft} />
-                        </Button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                          <Button
-                            key={page}
-                            size="xs"
-                            variant={page === currentPage ? 'solid' : 'ghost'}
-                            colorScheme={page === currentPage ? 'orange' : 'gray'}
-                            onClick={() => setPage('inProgress', page)}
-                          >
-                            {page}
-                          </Button>
-                        ))}
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          disabled={currentPage === totalPages}
-                          onClick={() => setPage('inProgress', currentPage + 1)}
-                        >
-                          <Icon as={FiChevronRight} />
-                        </Button>
+                        <Badge colorScheme="orange" fontSize="xs">
+                          {inProgressTickets.length}
+                        </Badge>
                       </HStack>
-                    )}
-                  </VStack>
-                </Box>
-              );
-            })() : null}
+                      <VStack align="stretch" gap={2}>
+                        {paginatedTickets.map((ticket, index) => (
+                          <TicketCard
+                            key={ticket.id}
+                            ticket={ticket}
+                            index={startIndex + index}
+                          />
+                        ))}
+                        {inProgressTickets.length === 0 && (
+                          <Box
+                            p={4}
+                            borderRadius="md"
+                            borderWidth="1px"
+                            borderStyle="dashed"
+                            borderColor="gray.300"
+                            textAlign="center"
+                          >
+                            <Text fontSize="xs" color="gray.400">
+                              Nessun ticket in lavorazione
+                            </Text>
+                          </Box>
+                        )}
+                        {totalPages > 1 && (
+                          <HStack justify="center" mt={2} gap={1}>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              disabled={currentPage === 1}
+                              onClick={() => setPage('inProgress', currentPage - 1)}
+                            >
+                              <Icon as={FiChevronLeft} />
+                            </Button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                size="xs"
+                                variant={page === currentPage ? 'solid' : 'ghost'}
+                                colorScheme={page === currentPage ? 'orange' : 'gray'}
+                                onClick={() => setPage('inProgress', page)}
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              disabled={currentPage === totalPages}
+                              onClick={() => setPage('inProgress', currentPage + 1)}
+                            >
+                              <Icon as={FiChevronRight} />
+                            </Button>
+                          </HStack>
+                        )}
+                      </VStack>
+                    </Box>
+                  );
+                })() : null}
 
             {/* Colonna Completati - visualizzazione normale */}
             {statusFilters.completed && !statusFilters.open && !statusFilters.inProgress ? (() => {
@@ -516,7 +535,12 @@ export default function TicketingPage() {
               const paginatedTickets = completedTickets.slice(startIndex, endIndex);
               
               return (
-                <Box flex="1" w="100%">
+                <Box 
+                  display="flex"
+                  flexDirection="column"
+                  minH="200px"
+                  gridColumn="1 / -1"
+                >
                   <HStack mb={3} gap={2}>
                     <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
                       Completati
@@ -592,7 +616,11 @@ export default function TicketingPage() {
               const endIndex = startIndex + itemsPerPage;
               const paginatedTickets = completedTickets.slice(startIndex, endIndex);
               return (
-                <Box flex="1" w="100%">
+                <Box 
+                  display="flex"
+                  flexDirection="column"
+                  minH="200px"
+                >
                   <HStack mb={3} gap={2}>
                     <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
                       Completati
@@ -658,7 +686,9 @@ export default function TicketingPage() {
                 </Box>
               );
             })() : null}
-          </Stack>
+              </Box>
+            );
+          })()
         )}
       </Box>
 

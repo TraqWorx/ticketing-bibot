@@ -47,6 +47,7 @@ interface CreateTicketModalProps {
     firstName: string;
     lastName: string;
     phone: string;
+    email: string;
     ghl_contact_id: string;
   };
 }
@@ -120,6 +121,7 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
       formDataToSend.append('creatorId', ticketCreator.id);
       formDataToSend.append('creatorName', `${ticketCreator.firstName} ${ticketCreator.lastName}`);
       formDataToSend.append('creatorPhone', ticketCreator.phone);
+      formDataToSend.append('creatorEmail', ticketCreator.email);
       formDataToSend.append('ghlContactId', ticketCreator.ghl_contact_id);
 
       // Aggiungi tutti gli allegati
