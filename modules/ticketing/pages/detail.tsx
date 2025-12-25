@@ -27,12 +27,12 @@ import {
     IconButton,
     Container,
 } from '@chakra-ui/react';
-import { 
-    FiArrowLeft, 
-    FiMessageSquare, 
-    FiRefreshCw, 
-    FiPaperclip, 
-    FiX, 
+import {
+    FiArrowLeft,
+    FiMessageSquare,
+    FiRefreshCw,
+    FiPaperclip,
+    FiX,
     FiChevronRight,
     FiClock,
     FiMic,
@@ -45,23 +45,23 @@ import { formatDueDate } from '../hooks/useTickets';
 
 // Colore custom per badge priorità
 const getPriorityBg = (priority?: string) => {
-  switch (priority) {
-    case 'low': return 'green.100'; // verdino
-    case 'medium': return 'yellow.100'; // giallino
-    case 'high': return 'red.200'; // rosso chiaro
-    case 'urgent': return 'red.400'; // rosso acceso
-    default: return 'gray.100';
-  }
+    switch (priority) {
+        case 'low': return 'green.100'; // verdino
+        case 'medium': return 'yellow.100'; // giallino
+        case 'high': return 'red.200'; // rosso chiaro
+        case 'urgent': return 'red.400'; // rosso acceso
+        default: return 'gray.100';
+    }
 };
 
 const getPriorityColor = (priority?: string) => {
-  switch (priority) {
-    case 'low': return 'green.700';
-    case 'medium': return 'yellow.800';
-    case 'high': return 'red.700';
-    case 'urgent': return 'white';
-    default: return 'gray.700';
-  }
+    switch (priority) {
+        case 'low': return 'green.700';
+        case 'medium': return 'yellow.800';
+        case 'high': return 'red.700';
+        case 'urgent': return 'white';
+        default: return 'gray.700';
+    }
 };
 
 // Stile per animazione pulse
@@ -92,7 +92,7 @@ interface AsanaStory {
 export default function TicketDetailPage() {
     const router = useRouter();
     const { id } = router.query;
-    
+
     const [newComment, setNewComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [taskDetail, setTaskDetail] = useState<AsanaTaskDetail | null>(null);
@@ -114,10 +114,19 @@ export default function TicketDetailPage() {
     const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const isInitialLoadRef = useRef(true);
 
+    // Stato per l'utente Asana corrente (account tecnico)
+    const [currentAsanaUser, setCurrentAsanaUser] = useState<{ gid: string; name: string; email: string } | null>(null);
+
+    // Stato per i dati Firestore del ticket
+    const [firestoreData, setFirestoreData] = useState<any>(null);
+    const [loadingFirestore, setLoadingFirestore] = useState(false);
+
     useEffect(() => {
         if (id) {
             loadTaskDetail();
             loadComments();
+            loadCurrentAsanaUser();
+            loadFirestoreData();
         }
     }, [id]);
 
@@ -151,6 +160,8 @@ export default function TicketDetailPage() {
             const axios = require('axios');
             const response = await axios.get(`/api/asana/task-detail?taskGid=${id}`);
             setTaskDetail(response.data.data);
+            // Carica dati Firestore dopo aver caricato il task detail
+            await loadFirestoreData();
         } catch (error) {
             console.error('Errore caricamento dettaglio task:', error);
             toast.error('Errore nel caricamento del ticket');
@@ -173,6 +184,42 @@ export default function TicketDetailPage() {
         }
     };
 
+    const loadCurrentAsanaUser = async () => {
+        try {
+            const axios = require('axios');
+            const response = await axios.get('/api/asana/current-user');
+            setCurrentAsanaUser(response.data);
+        } catch (error) {
+            console.error('Errore caricamento utente Asana corrente:', error);
+            setCurrentAsanaUser(null);
+        }
+    };
+
+    const loadFirestoreData = async () => {
+        try {
+            setLoadingFirestore(true);
+            const axios = require('axios');
+            // Estrai clientId dai custom fields del task
+            if (taskDetail) {
+                const clientId = getClientIdFromAsana(taskDetail);
+                if (clientId) {
+                    // Recupera tutti i ticket Firestore dell'utente e filtra quello giusto
+                    const response = await axios.get(`/api/firestore/tickets?userId=${clientId}`);
+                    const allTickets = response.data || {};
+                    setFirestoreData(allTickets[id as string] || null);
+                } else {
+                    setFirestoreData(null);
+                }
+            } else {
+                setFirestoreData(null);
+            }
+        } catch (error) {
+            setFirestoreData(null);
+        } finally {
+            setLoadingFirestore(false);
+        }
+    };
+
     const formatDate = (date: Date) => {
         const d = new Date(date);
         const now = new Date();
@@ -184,9 +231,19 @@ export default function TicketDetailPage() {
         if (diffMins < 1) return 'Adesso';
         if (diffMins < 60) return `${diffMins} min fa`;
         if (diffHours < 24) return `${diffHours} ore fa`;
-        
-        return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ', ' + 
-               d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+        return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ', ' +
+            d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // Helper per estrarre clientId dai custom fields Asana
+    const getClientIdFromAsana = (taskDetail: AsanaTaskDetail) => {
+        const clientIdField = taskDetail.custom_fields?.find(
+            (cf: any) => cf.name?.toLowerCase() === 'client_id' ||
+                cf.name?.toLowerCase() === 'cliente_id' ||
+                cf.name?.toLowerCase() === 'user_id'
+        );
+        return clientIdField?.display_value || clientIdField?.text_value || null;
     };
 
     // Helper per estrarre priorità dai custom fields Asana
@@ -195,11 +252,11 @@ export default function TicketDetailPage() {
             (cf: any) => cf.name?.toLowerCase() === 'priorità' || cf.name?.toLowerCase() === 'task_priority'
         );
         let priorityValue = (
-            priorityCustomField?.display_value || 
-            priorityCustomField?.enum_value?.name || 
+            priorityCustomField?.display_value ||
+            priorityCustomField?.enum_value?.name ||
             'media'
         ).toString().trim().toLowerCase();
-        
+
         if (["urgente", "urgent"].includes(priorityValue)) {
             return 'urgent';
         } else if (["alta", "high"].includes(priorityValue)) {
@@ -281,14 +338,14 @@ export default function TicketDetailPage() {
         try {
             const formData = new FormData();
             formData.append('taskGid', id as string);
-            
+
             // Converti il blob in un File con nome appropriato
             const timestamp = Date.now();
             const audioFileName = `nota-vocale-${timestamp}.webm`;
-            const audioFile = new File([audioBlob], audioFileName, { 
-                type: 'audio/webm' 
+            const audioFile = new File([audioBlob], audioFileName, {
+                type: 'audio/webm'
             });
-            
+
             formData.append('text', `🎤 Nota vocale: ${audioFileName}`);
             formData.append('attachments', audioFile);
 
@@ -299,14 +356,13 @@ export default function TicketDetailPage() {
                 },
             });
 
-            toast.success('Nota vocale inviata!');
             setAudioBlob(null);
             setRecordingTime(0);
             await Promise.all([loadComments(), loadTaskDetail()]);
         } catch (error: any) {
             console.error('Error sending audio:', error);
-            const errorMessage = error.response?.data?.message 
-                || error.message 
+            const errorMessage = error.response?.data?.message
+                || error.message
                 || 'Errore durante l\'invio della nota vocale';
             toast.error(errorMessage, { autoClose: 5000 });
         } finally {
@@ -328,7 +384,7 @@ export default function TicketDetailPage() {
             const formData = new FormData();
             formData.append('taskGid', id as string);
             formData.append('text', newComment);
-            
+
             attachments.forEach((file) => {
                 formData.append('attachments', file);
             });
@@ -347,19 +403,15 @@ export default function TicketDetailPage() {
                     `Commento aggiunto, ma ${result.attachmentErrors} allegato/i non caricato/i.`,
                     { autoClose: 5000 }
                 );
-            } else if (result.attachmentsCount > 0) {
-                toast.success(`Commento aggiunto con ${result.attachmentsCount} allegato/i!`);
-            } else {
-                toast.success('Commento aggiunto!');
             }
 
             setNewComment('');
             setAttachments([]);
-            await Promise.all([loadComments(), loadTaskDetail()]);
+            await Promise.all([loadComments(), loadTaskDetail(), loadFirestoreData()]);
         } catch (error: any) {
             console.error('Error adding comment:', error);
-            const errorMessage = error.response?.data?.message 
-                || error.message 
+            const errorMessage = error.response?.data?.message
+                || error.message
                 || 'Errore durante l\'invio del commento';
             toast.error(errorMessage, { autoClose: 5000 });
         } finally {
@@ -404,7 +456,7 @@ export default function TicketDetailPage() {
     return (
         <Box minH="100vh" bg="gray.50" pb="180px">
             <style>{pulseKeyframes}</style>
-            
+
             {/* Content scrollabile */}
             <Container maxW="container.md" px={3}>
                 <VStack align="stretch" gap={4} pt={{ base: 0, lg: 3 }}>
@@ -486,8 +538,8 @@ export default function TicketDetailPage() {
                                 >
                                     Priorità: {
                                         getPriorityFromAsana(taskDetail) === 'urgent' ? 'Urgente' :
-                                        getPriorityFromAsana(taskDetail) === 'high' ? 'Alta' :
-                                        getPriorityFromAsana(taskDetail) === 'medium' ? 'Media' : 'Bassa'
+                                            getPriorityFromAsana(taskDetail) === 'high' ? 'Alta' :
+                                                getPriorityFromAsana(taskDetail) === 'medium' ? 'Media' : 'Bassa'
                                     }
                                 </Badge>
 
@@ -543,8 +595,8 @@ export default function TicketDetailPage() {
                                 >
                                     <HStack gap={2}>
                                         <span>{isDescriptionExpanded ? 'Mostra meno' : 'Mostra tutto'}</span>
-                                        <Icon 
-                                            as={FiChevronRight} 
+                                        <Icon
+                                            as={FiChevronRight}
                                             transform={isDescriptionExpanded ? 'rotate(-90deg)' : 'rotate(90deg)'}
                                             transition="transform 0.2s"
                                         />
@@ -573,9 +625,9 @@ export default function TicketDetailPage() {
                                                 onClick={() => window.open(attachment.download_url || attachment.view_url, '_blank')}
                                                 gap={3}
                                             >
-                                                <Badge 
-                                                    colorScheme="blue" 
-                                                    fontSize="xs" 
+                                                <Badge
+                                                    colorScheme="blue"
+                                                    fontSize="xs"
                                                     borderRadius="full"
                                                     w="24px"
                                                     h="24px"
@@ -586,9 +638,9 @@ export default function TicketDetailPage() {
                                                     {index + 1}
                                                 </Badge>
                                                 <Icon as={FiPaperclip} color="blue.500" boxSize="18px" />
-                                                <Text 
-                                                    fontSize="sm" 
-                                                    color="gray.700" 
+                                                <Text
+                                                    fontSize="sm"
+                                                    color="gray.700"
                                                     fontWeight="500"
                                                     flex="1"
                                                     overflow="hidden"
@@ -616,7 +668,7 @@ export default function TicketDetailPage() {
                         </HStack>
 
                         <VStack align="stretch" gap={3}>
-                            {loadingComments ? (
+                            {loadingComments || !currentAsanaUser ? (
                                 <Flex justify="center" py={8}>
                                     <Spinner size="md" color="gray.400" />
                                 </Flex>
@@ -646,29 +698,55 @@ export default function TicketDetailPage() {
                                 comments.map((comment, index) => (
                                     <Box key={comment.gid}>
                                         {/* Divider temporale */}
-                                        {(index === 0 || 
-                                          new Date(comment.created_at).toDateString() !== 
-                                          new Date(comments[index - 1].created_at).toDateString()) && (
-                                            <Flex align="center" gap={2} mb={3}>
-                                                <Box flex={1} h="1px" bg="gray.200" />
-                                                <HStack gap={1} px={2}>
-                                                    <Icon as={FiClock} boxSize="12px" color="gray.400" />
-                                                    <Text fontSize="xs" color="gray.500" fontWeight="500">
-                                                        {new Date(comment.created_at).toLocaleDateString('it-IT', {
-                                                            day: 'numeric',
-                                                            month: 'long',
-                                                            year: 'numeric'
-                                                        })}
-                                                    </Text>
-                                                </HStack>
-                                                <Box flex={1} h="1px" bg="gray.200" />
-                                            </Flex>
-                                        )}
+                                        {(index === 0 ||
+                                            new Date(comment.created_at).toDateString() !==
+                                            new Date(comments[index - 1].created_at).toDateString()) && (
+                                                <Flex align="center" gap={2} mb={3}>
+                                                    <Box flex={1} h="1px" bg="gray.200" />
+                                                    <HStack gap={1} px={2}>
+                                                        <Icon as={FiClock} boxSize="12px" color="gray.400" />
+                                                        <Text fontSize="xs" color="gray.500" fontWeight="500">
+                                                            {new Date(comment.created_at).toLocaleDateString('it-IT', {
+                                                                day: 'numeric',
+                                                                month: 'long',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </Text>
+                                                    </HStack>
+                                                    <Box flex={1} h="1px" bg="gray.200" />
+                                                </Flex>
+                                            )}
 
                                         <Flex direction="column" align="flex-start" gap={1}>
                                             <HStack gap={2} px={2}>
                                                 <Text fontSize="xs" fontWeight="600" color="gray.700">
-                                                    {comment.created_by.name}
+                                                    {(() => {
+                                                        // Prima cerca il nome del cliente da Firestore (nome webapp)
+                                                        let displayName = firestoreData?.clientName;
+                                                        
+                                                        // Se non trovato in Firestore, cerca nei custom fields Asana
+                                                        if (!displayName) {
+                                                            const clientNameField = taskDetail.custom_fields?.find(
+                                                                (cf: any) => cf.name?.toLowerCase() === 'nome cliente' ||
+                                                                           cf.name?.toLowerCase() === 'client_name' ||
+                                                                           cf.name?.toLowerCase() === 'cliente' ||
+                                                                           cf.name?.toLowerCase() === 'task_creator_name'
+                                                            );
+                                                            displayName = clientNameField?.display_value;
+                                                        }
+                                                        
+                                                        // Se è un commento tecnico, mostra il nome del cliente
+                                                        if (currentAsanaUser && comment.created_by.gid === currentAsanaUser.gid) {
+                                                            if (displayName) {
+                                                                return displayName;
+                                                            }
+                                                            // Fallback: nome dell'utente tecnico
+                                                            return currentAsanaUser.name || 'Supporto';
+                                                        }
+                                                        
+                                                        // Per commenti di altre persone, mostra il nome originale
+                                                        return comment.created_by.name;
+                                                    })()}
                                                 </Text>
                                                 <Text fontSize="xs" color="gray.400">
                                                     {formatDate(new Date(comment.created_at))}
@@ -716,231 +794,231 @@ export default function TicketDetailPage() {
             >
                 <Container maxW="container.md" px={3}>
                     <Box>
-                    {attachments.length > 0 && (
-                        <HStack gap={2} mb={2} flexWrap="wrap" pb={2} borderBottomWidth="1px" borderBottomColor="gray.100">
-                            {attachments.map((file, index) => (
-                                <Badge
-                                    key={index}
-                                    colorScheme="blue"
-                                    display="flex"
-                                    alignItems="center"
-                                    gap={1}
-                                    px={2}
-                                    py={1}
-                                    borderRadius="md"
-                                    fontSize="xs"
-                                >
-                                    <Icon as={FiPaperclip} boxSize="10px" />
-                                    <Text 
-                                        maxW="120px"
-                                        overflow="hidden"
-                                        textOverflow="ellipsis"
-                                        whiteSpace="nowrap"
+                        {attachments.length > 0 && (
+                            <HStack gap={2} mb={2} flexWrap="wrap" pb={2} borderBottomWidth="1px" borderBottomColor="gray.100">
+                                {attachments.map((file, index) => (
+                                    <Badge
+                                        key={index}
+                                        colorScheme="blue"
+                                        display="flex"
+                                        alignItems="center"
+                                        gap={1}
+                                        px={2}
+                                        py={1}
+                                        borderRadius="md"
+                                        fontSize="xs"
                                     >
-                                        {file.name}
-                                    </Text>
-                                    <Icon
-                                        as={FiX}
-                                        boxSize="12px"
-                                        cursor="pointer"
-                                        onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
-                                    />
-                                </Badge>
-                            ))}
-                        </HStack>
-                    )}
-
-                    <HStack gap={2} align="flex-end">
-                        {/* Mostra anteprima audio se disponibile */}
-                        {audioBlob ? (
-                            <>
-                                <Box
-                                    flex={1}
-                                    bg="gray.50"
-                                    borderRadius="xl"
-                                    borderWidth="1px"
-                                    borderColor="gray.300"
-                                    p={3}
-                                >
-                                    <HStack gap={3} justify="space-between">
-                                        <HStack gap={2} flex={1}>
-                                            <Icon as={FiMic} boxSize="20px" color="#25D366" />
-                                            <VStack align="flex-start" gap={0} flex={1}>
-                                                <Text fontSize="sm" fontWeight="600" color="gray.700">
-                                                    Nota vocale
-                                                </Text>
-                                                <Text fontSize="xs" color="gray.500">
-                                                    {formatRecordingTime(recordingTime)}
-                                                </Text>
-                                            </VStack>
-                                            <audio 
-                                                src={URL.createObjectURL(audioBlob)} 
-                                                controls 
-                                                style={{ 
-                                                    height: '32px',
-                                                    flex: 1,
-                                                    maxWidth: '200px'
-                                                }}
-                                            />
-                                        </HStack>
-                                        <IconButton
-                                            aria-label="Elimina audio"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={cancelRecording}
-                                            borderRadius="full"
-                                            color="red.500"
+                                        <Icon as={FiPaperclip} boxSize="10px" />
+                                        <Text
+                                            maxW="120px"
+                                            overflow="hidden"
+                                            textOverflow="ellipsis"
+                                            whiteSpace="nowrap"
                                         >
-                                            <FiX />
-                                        </IconButton>
-                                    </HStack>
-                                </Box>
-                                <IconButton
-                                    aria-label="Invia nota vocale"
-                                    bg="#25D366"
-                                    color="white"
-                                    _hover={{ bg: "#20BA5A" }}
-                                    _active={{ bg: "#1DA851" }}
-                                    size="lg"
-                                    onClick={sendAudioMessage}
-                                    loading={isSubmitting}
-                                    disabled={isSubmitting}
-                                    borderRadius="full"
-                                    flexShrink={0}
-                                >
-                                    <Icon as={FiSend} boxSize="20px" />
-                                </IconButton>
-                            </>
-                        ) : isRecording ? (
-                            <>
-                                <Box
-                                    flex={1}
-                                    bg="red.50"
-                                    borderRadius="xl"
-                                    borderWidth="1px"
-                                    borderColor="red.300"
-                                    p={3}
-                                >
-                                    <HStack gap={3}>
-                                        <Box
-                                            w="12px"
-                                            h="12px"
-                                            borderRadius="full"
-                                            bg="red.500"
-                                            animation="pulse 1.5s ease-in-out infinite"
+                                            {file.name}
+                                        </Text>
+                                        <Icon
+                                            as={FiX}
+                                            boxSize="12px"
+                                            cursor="pointer"
+                                            onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
                                         />
-                                        <Text fontSize="sm" fontWeight="600" color="gray.700">
-                                            Registrazione in corso...
-                                        </Text>
-                                        <Text fontSize="sm" fontWeight="700" color="red.500" ml="auto">
-                                            {formatRecordingTime(recordingTime)}
-                                        </Text>
-                                    </HStack>
-                                </Box>
-                                <IconButton
-                                    aria-label="Annulla registrazione"
-                                    variant="ghost"
-                                    size="lg"
-                                    onClick={cancelRecording}
-                                    borderRadius="full"
-                                    flexShrink={0}
-                                    color="red.500"
-                                >
-                                    <FiX />
-                                </IconButton>
-                                <IconButton
-                                    aria-label="Ferma registrazione"
-                                    bg="red.500"
-                                    color="white"
-                                    _hover={{ bg: "red.600" }}
-                                    _active={{ bg: "red.700" }}
-                                    size="lg"
-                                    onClick={stopRecording}
-                                    borderRadius="full"
-                                    flexShrink={0}
-                                >
-                                    <Icon as={FiMic} boxSize="20px" />
-                                </IconButton>
-                            </>
-                        ) : (
-                            <>
-                                <IconButton
-                                    aria-label="Allega file"
-                                    variant="ghost"
-                                    size="md"
-                                    onClick={() => document.getElementById('mobile-attachment-input')?.click()}
-                                    disabled={taskDetail.completed}
-                                    borderRadius="full"
-                                    flexShrink={0}
-                                >
-                                    <FiPaperclip />
-                                </IconButton>
-                                <input
-                                    id="mobile-attachment-input"
-                                    type="file"
-                                    multiple
-                                    style={{ display: 'none' }}
-                                    onChange={(e) => {
-                                        const files = e.target.files;
-                                        if (files) {
-                                            setAttachments(prev => [...prev, ...Array.from(files)]);
-                                        }
-                                    }}
-                                    disabled={taskDetail.completed}
-                                />
-                                
-                                <Textarea
-                                    value={newComment}
-                                    onChange={(e) => setNewComment(e.target.value)}
-                                    placeholder={taskDetail.completed ? "Ticket completato" : "Scrivi un messaggio..."}
-                                    bg="gray.50"
-                                    borderColor="gray.300"
-                                    borderRadius="xl"
-                                    _hover={{ borderColor: 'gray.400', bg: 'white' }}
-                                    _focus={{ borderColor: '#25D366', bg: 'white', boxShadow: '0 0 0 1px #25D366' }}
-                                    resize="none"
-                                    minH="44px"
-                                    maxH="120px"
-                                    fontSize="sm"
-                                    disabled={taskDetail.completed}
-                                    flex={1}
-                                    py={3}
-                                />
-                                
-                                {/* Due pulsanti separati: invio e microfono */}
-                                <IconButton
-                                    aria-label="Invia messaggio"
-                                    bg="#25D366"
-                                    color="white"
-                                    _hover={{ bg: "#20BA5A" }}
-                                    _active={{ bg: "#1DA851" }}
-                                    size="lg"
-                                    onClick={handleSubmitComment}
-                                    loading={isSubmitting}
-                                    disabled={(!newComment.trim() && attachments.length === 0) || taskDetail.completed}
-                                    borderRadius="full"
-                                    flexShrink={0}
-                                >
-                                    <Icon as={FiSend} boxSize="20px" />
-                                </IconButton>
-
-                                <IconButton
-                                    aria-label="Registra nota vocale"
-                                    bg="gray.100"
-                                    color="gray.600"
-                                    _hover={{ bg: "gray.200" }}
-                                    _active={{ bg: "gray.300" }}
-                                    size="lg"
-                                    onClick={startRecording}
-                                    disabled={taskDetail.completed}
-                                    borderRadius="full"
-                                    flexShrink={0}
-                                >
-                                    <Icon as={FiMic} boxSize="20px" />
-                                </IconButton>
-                            </>
+                                    </Badge>
+                                ))}
+                            </HStack>
                         )}
-                    </HStack>
+
+                        <HStack gap={2} align="flex-end">
+                            {/* Mostra anteprima audio se disponibile */}
+                            {audioBlob ? (
+                                <>
+                                    <Box
+                                        flex={1}
+                                        bg="gray.50"
+                                        borderRadius="xl"
+                                        borderWidth="1px"
+                                        borderColor="gray.300"
+                                        p={3}
+                                    >
+                                        <HStack gap={3} justify="space-between">
+                                            <HStack gap={2} flex={1}>
+                                                <Icon as={FiMic} boxSize="20px" color="#25D366" />
+                                                <VStack align="flex-start" gap={0} flex={1}>
+                                                    <Text fontSize="sm" fontWeight="600" color="gray.700">
+                                                        Nota vocale
+                                                    </Text>
+                                                    <Text fontSize="xs" color="gray.500">
+                                                        {formatRecordingTime(recordingTime)}
+                                                    </Text>
+                                                </VStack>
+                                                <audio
+                                                    src={URL.createObjectURL(audioBlob)}
+                                                    controls
+                                                    style={{
+                                                        height: '32px',
+                                                        flex: 1,
+                                                        maxWidth: '200px'
+                                                    }}
+                                                />
+                                            </HStack>
+                                            <IconButton
+                                                aria-label="Elimina audio"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={cancelRecording}
+                                                borderRadius="full"
+                                                color="red.500"
+                                            >
+                                                <FiX />
+                                            </IconButton>
+                                        </HStack>
+                                    </Box>
+                                    <IconButton
+                                        aria-label="Invia nota vocale"
+                                        bg="#25D366"
+                                        color="white"
+                                        _hover={{ bg: "#20BA5A" }}
+                                        _active={{ bg: "#1DA851" }}
+                                        size="lg"
+                                        onClick={sendAudioMessage}
+                                        loading={isSubmitting}
+                                        disabled={isSubmitting}
+                                        borderRadius="full"
+                                        flexShrink={0}
+                                    >
+                                        <Icon as={FiSend} boxSize="20px" />
+                                    </IconButton>
+                                </>
+                            ) : isRecording ? (
+                                <>
+                                    <Box
+                                        flex={1}
+                                        bg="red.50"
+                                        borderRadius="xl"
+                                        borderWidth="1px"
+                                        borderColor="red.300"
+                                        p={3}
+                                    >
+                                        <HStack gap={3}>
+                                            <Box
+                                                w="12px"
+                                                h="12px"
+                                                borderRadius="full"
+                                                bg="red.500"
+                                                animation="pulse 1.5s ease-in-out infinite"
+                                            />
+                                            <Text fontSize="sm" fontWeight="600" color="gray.700">
+                                                Registrazione in corso...
+                                            </Text>
+                                            <Text fontSize="sm" fontWeight="700" color="red.500" ml="auto">
+                                                {formatRecordingTime(recordingTime)}
+                                            </Text>
+                                        </HStack>
+                                    </Box>
+                                    <IconButton
+                                        aria-label="Annulla registrazione"
+                                        variant="ghost"
+                                        size="lg"
+                                        onClick={cancelRecording}
+                                        borderRadius="full"
+                                        flexShrink={0}
+                                        color="red.500"
+                                    >
+                                        <FiX />
+                                    </IconButton>
+                                    <IconButton
+                                        aria-label="Ferma registrazione"
+                                        bg="red.500"
+                                        color="white"
+                                        _hover={{ bg: "red.600" }}
+                                        _active={{ bg: "red.700" }}
+                                        size="lg"
+                                        onClick={stopRecording}
+                                        borderRadius="full"
+                                        flexShrink={0}
+                                    >
+                                        <Icon as={FiMic} boxSize="20px" />
+                                    </IconButton>
+                                </>
+                            ) : (
+                                <>
+                                    <IconButton
+                                        aria-label="Allega file"
+                                        variant="ghost"
+                                        size="md"
+                                        onClick={() => document.getElementById('mobile-attachment-input')?.click()}
+                                        disabled={taskDetail.completed}
+                                        borderRadius="full"
+                                        flexShrink={0}
+                                    >
+                                        <FiPaperclip />
+                                    </IconButton>
+                                    <input
+                                        id="mobile-attachment-input"
+                                        type="file"
+                                        multiple
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => {
+                                            const files = e.target.files;
+                                            if (files) {
+                                                setAttachments(prev => [...prev, ...Array.from(files)]);
+                                            }
+                                        }}
+                                        disabled={taskDetail.completed}
+                                    />
+
+                                    <Textarea
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        placeholder={taskDetail.completed ? "Ticket completato" : "Scrivi un messaggio..."}
+                                        bg="gray.50"
+                                        borderColor="gray.300"
+                                        borderRadius="xl"
+                                        _hover={{ borderColor: 'gray.400', bg: 'white' }}
+                                        _focus={{ borderColor: '#25D366', bg: 'white', boxShadow: '0 0 0 1px #25D366' }}
+                                        resize="none"
+                                        minH="44px"
+                                        maxH="120px"
+                                        fontSize="sm"
+                                        disabled={taskDetail.completed}
+                                        flex={1}
+                                        py={3}
+                                    />
+
+                                    {/* Due pulsanti separati: invio e microfono */}
+                                    <IconButton
+                                        aria-label="Invia messaggio"
+                                        bg="#25D366"
+                                        color="white"
+                                        _hover={{ bg: "#20BA5A" }}
+                                        _active={{ bg: "#1DA851" }}
+                                        size="lg"
+                                        onClick={handleSubmitComment}
+                                        loading={isSubmitting}
+                                        disabled={(!newComment.trim() && attachments.length === 0) || taskDetail.completed}
+                                        borderRadius="full"
+                                        flexShrink={0}
+                                    >
+                                        <Icon as={FiSend} boxSize="20px" />
+                                    </IconButton>
+
+                                    <IconButton
+                                        aria-label="Registra nota vocale"
+                                        bg="gray.100"
+                                        color="gray.600"
+                                        _hover={{ bg: "gray.200" }}
+                                        _active={{ bg: "gray.300" }}
+                                        size="lg"
+                                        onClick={startRecording}
+                                        disabled={taskDetail.completed}
+                                        borderRadius="full"
+                                        flexShrink={0}
+                                    >
+                                        <Icon as={FiMic} boxSize="20px" />
+                                    </IconButton>
+                                </>
+                            )}
+                        </HStack>
                     </Box>
                 </Container>
             </Box>

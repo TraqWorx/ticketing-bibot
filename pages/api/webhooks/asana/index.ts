@@ -15,6 +15,8 @@
  * 5. Invia webhook evento a GHL per automazioni
  * 
  * NOTA: Asana richiede handshake iniziale con X-Hook-Secret
+ * 
+ * TEST: POST /api/webhooks/asana/test con payload di esempio
  */
 
 import { sendTicketClosedEvent, sendTicketRepliedByAdminEvent } from '@/lib/ghl/ghlService';
@@ -30,9 +32,16 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log('[Asana Webhook] Received request:', {
+    method: req.method,
+    headers: req.headers,
+    body: req.body
+  });
+
   // Gestione handshake Asana (prima chiamata per verificare webhook)
   const hookSecret = req.headers['x-hook-secret'];
   if (hookSecret) {
+    console.log('[Asana Webhook] Handshake received, responding with secret');
     res.setHeader('X-Hook-Secret', hookSecret);
     return res.status(200).end();
   }
@@ -50,6 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     for (const event of events) {
+      console.log('[Asana Webhook] Processing event:', event);
       await processAsanaEvent(event);
     }
 
@@ -85,6 +95,8 @@ async function handleNewStory(event: any): Promise<void> {
   const { resource, parent } = event;
   const storyGid = resource?.gid;
   const taskGid = parent?.gid;
+
+  console.log('[Asana Webhook] Handling new story:', { storyGid, taskGid, resource });
 
   if (!taskGid) {
     return;

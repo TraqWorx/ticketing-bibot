@@ -154,6 +154,34 @@ export async function testAsanaConnection(): Promise<boolean> {
 }
 
 /**
+ * Ottiene le informazioni dell'utente corrente (account tecnico)
+ */
+export async function getCurrentAsanaUser(): Promise<{ gid: string; name: string; email: string } | null> {
+    if (!process.env.ASANA_API_BASE_URL || !process.env.ASANA_ACCESS_TOKEN) {
+        return null;
+    }
+
+    try {
+        const axios = require('axios');
+        const response = await axios.get(`${process.env.ASANA_API_BASE_URL}/users/me`, {
+            headers: {
+                'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,
+            },
+        });
+
+        const user = response.data.data;
+        return {
+            gid: user.gid,
+            name: user.name,
+            email: user.email,
+        };
+    } catch (error) {
+        console.error('Errore recupero utente Asana corrente:', error);
+        return null;
+    }
+}
+
+/**
  * Uploada un allegato su Asana e lo associa a un task
  * 
  * IMPORTANTE: Gli allegati devono essere caricati DOPO la creazione del task.
