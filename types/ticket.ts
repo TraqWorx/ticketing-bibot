@@ -45,38 +45,38 @@ export enum TicketPriority {
 export interface FirestoreTicket {
   /** ID del ticket (asana_gid) */
   ticketId: string;
-  
+
   /** ID del cliente (Firebase UID) */
   clientId: string;
-  
+
   /** ID contatto GHL per notifiche */
   ghlContactId?: string;
-  
+
   /** Stato del ticket */
   status: TicketStatus;
-  
-  
+
+
   /** Chi è in attesa di risposta */
   waitingFor: WaitingFor;
-  
+
   /** Timestamp ultima attività */
   lastActivityAt: FirebaseFirestore.Timestamp | Date;
-  
+
   /** Timestamp creazione */
   createdAt: FirebaseFirestore.Timestamp | Date;
-  
+
   /** Titolo del ticket (cache da Asana) */
   title?: string;
-  
+
   /** Priorità del ticket */
   priority?: 'high' | 'medium' | 'low';
-  
+
   /** Nome del cliente (cache) */
   clientName?: string;
-  
+
   /** Telefono del cliente (cache) */
   clientPhone?: string;
-  
+
   /** Email del cliente (cache) */
   clientEmail?: string;
 }
@@ -106,7 +106,7 @@ export interface TicketReplyPayload {
 /**
  * Eventi GHL supportati
  */
-export type GHLEventType = 
+export type GHLEventType =
   | 'ticket_created'
   | 'ticket_replied_by_client'
   | 'ticket_replied_by_admin'
@@ -131,6 +131,7 @@ export interface GHLTicketCreatedPayload extends GHLWebhookPayload {
     clientId: string;
     ghlContactId: string;
     ticketId: string;
+    ticketUrl?: string;
     title: string;
     priority: string;
     clientName: string;
@@ -148,6 +149,7 @@ export interface GHLTicketRepliedPayload extends GHLWebhookPayload {
     clientId: string;
     ghlContactId: string;
     ticketId: string;
+    ticketUrl?: string;
     repliedAt: string;
     repliedBy: MessageAuthor;
     clientName?: string;
@@ -166,6 +168,7 @@ export interface GHLTicketClosedPayload extends GHLWebhookPayload {
     clientId: string;
     ghlContactId?: string;
     ticketId: string;
+    ticketUrl?: string;
     closedAt: string;
   };
 }
@@ -179,6 +182,7 @@ export interface GHLTicketReopenedPayload extends GHLWebhookPayload {
     clientId: string;
     ghlContactId: string;
     ticketId: string;
+    ticketUrl?: string;
     reopenedAt: string;
     reopenedBy: 'admin' | 'client';
   };

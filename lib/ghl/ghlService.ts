@@ -327,6 +327,7 @@ export async function sendTicketCreatedEvent(params: {
             clientId: params.clientId,
             ghlContactId: params.ghlContactId,
             ticketId: params.ticketId,
+            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
             title: params.title,
             priority: params.priority,
             clientName: params.clientName,
@@ -334,6 +335,8 @@ export async function sendTicketCreatedEvent(params: {
             openedAt: new Date().toISOString(),
         },
     };
+
+    console.log('Sending Ticket Created Event to GHL:', payload);
 
     sendWebhookToUrl(sendClientMsgWebhookUrl || '', payload);
     sendWebhookToUrl(sendAdminMsgWebhookUrl || '', payload);
@@ -405,8 +408,9 @@ export async function sendTicketRepliedByAdminEvent(params: {
             clientId: params.clientId,
             ghlContactId: params.ghlContactId,
             ticketId: params.ticketId,
+            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
             repliedAt: new Date().toISOString(),
-            repliedBy: 'admin',
+            repliedBy: 'admin' as MessageAuthor,
         },
     };
 
@@ -437,6 +441,7 @@ export async function sendTicketClosedEvent(params: {
             clientId: params.clientId,
             ghlContactId: params.ghlContactId,
             ticketId: params.ticketId,
+            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
             closedAt: new Date().toISOString(),
         },
     };
@@ -462,8 +467,46 @@ export async function sendTicketReopenedEvent(params: {
             clientId: params.clientId,
             ghlContactId: params.ghlContactId,
             ticketId: params.ticketId,
+            ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
             reopenedAt: new Date().toISOString(),
             reopenedBy: params.reopenedBy,
+        },
+    };
+
+    return sendWebhookToUrl(webhookUrl || '', payload);
+}
+
+/**
+ * Invia evento: Richiesta reset password per nuovo utente
+ *
+ * Webhook URL: GHL_WEBHOOK_PASSWORD_RESET
+ *
+ * GHL Workflow può:
+ * - Inviare email brandizzata con link di reset
+ * - Creare attività follow-up
+ * - Aggiornare stato contatto
+ */
+export async function sendPasswordResetEvent(params: {
+    clientId: string;
+    ghlContactId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    resetLink: string;
+}): Promise<boolean> {
+    const webhookUrl = process.env.GHL_WEBHOOK_PASSWORD_RESET;
+
+    const payload = {
+        event: 'password_reset_requested',
+        timestamp: new Date().toISOString(),
+        data: {
+            clientId: params.clientId,
+            ghlContactId: params.ghlContactId,
+            email: params.email,
+            firstName: params.firstName,
+            lastName: params.lastName,
+            resetLink: params.resetLink,
+            requestedAt: new Date().toISOString(),
         },
     };
 

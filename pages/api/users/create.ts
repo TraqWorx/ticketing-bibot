@@ -12,7 +12,7 @@ import { NextApiResponse } from 'next';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/auth-middleware';
 import { adminAuth, adminDb } from '@/config/firebase-admin';
 import { UserRole } from '@/types';
-import { searchGHLContact, createGHLContact } from '@/lib/ghl/ghlService';
+import { searchGHLContact, createGHLContact, sendPasswordResetEvent } from '@/lib/ghl/ghlService';
 
 interface CreateUserBody {
   email: string;
@@ -21,30 +21,43 @@ interface CreateUserBody {
   phone: string;
 }
 
-// Invia email tramite Firebase Auth (sistema integrato)
-async function sendPasswordSetupEmail(email: string): Promise<void> {
-  // Firebase invia automaticamente email quando usi il client SDK
-  // Per inviare da server, usiamo fetch per chiamare il REST API di Firebase
-  
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-  
-  if (!apiKey) {
-    console.error('FIREBASE_API_KEY not configured');
-    return;
-  }
-
+// Genera link di reset password e invia webhook a GHL per email custom
+async function sendPasswordResetWebhook(userData: {
+  id: string;
+  ghl_contact_id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}): Promise<void> {
   try {
-    const axios = require('axios');
-    await axios.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
-      {
-        requestType: 'PASSWORD_RESET',
-        email: email,
-      }
-    );
+    // Genera link di reset password di Firebase per ottenere il codice OOB
+    const firebaseResetLink = await adminAuth.generatePasswordResetLink(userData.email, {
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password`,
+    });
+
+    // Estrai il codice OOB dal link di Firebase
+    const url = new URL(firebaseResetLink);
+    const oobCode = url.searchParams.get('oobCode');
+
+    if (!oobCode) {
+      throw new Error('Impossibile estrarre il codice OOB dal link di Firebase');
+    }
+
+    // Crea link personalizzato che punta alla nostra pagina
+    const customResetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?oobCode=${oobCode}`;
+
+    // Invia webhook a GHL per gestire l'invio dell'email custom
+    await sendPasswordResetEvent({
+      clientId: userData.id,
+      ghlContactId: userData.ghl_contact_id,
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      resetLink: customResetLink,
+    });
 
   } catch (error) {
-    console.error('Error sending password reset email:', error);
+    console.error('Error sending password reset webhook:', error);
     throw error;
   }
 }
@@ -112,9 +125,8 @@ async function handler(
 
     await adminDb.collection('users').doc(userRecord.uid).set(userData);
 
-    // 5. Invia email automatica Firebase per impostare password
-    // Firebase invierà email con template configurato nella console
-    await sendPasswordSetupEmail(email);
+    // 5. Genera link reset password e invia webhook a GHL per email custom
+    await sendPasswordResetWebhook(userData);
 
     // TODO: 6. Trigger onboarding GoHighLevel
     // await triggerGhlOnboarding(userData);

@@ -25,6 +25,11 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading, isLoggingOut } = useAuth();
   const router = useRouter();
 
+  // Allow access to reset-password page without authentication
+  if (router.pathname === '/reset-password') {
+    return <>{children}</>;
+  }
+
   // Show loading spinner during auth check or logout
   if (loading || isLoggingOut) {
     return (
