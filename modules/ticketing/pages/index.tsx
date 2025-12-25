@@ -573,6 +573,7 @@ export default function TicketingPage() {
                       display="flex"
                       flexDirection="column"
                       minH="200px"
+                      mb={{ base: 16, md: 0 }}
                     >
                       <HStack mb={3} gap={2}>
                         <Text fontSize="xs" fontWeight="700" color="blue.600" textTransform="uppercase">

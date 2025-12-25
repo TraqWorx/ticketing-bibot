@@ -282,6 +282,18 @@ export default function TicketDetailPage() {
 
     const startRecording = async () => {
         try {
+            // Verifica contesto sicuro per getUserMedia
+            const isSecureContext = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            if (!isSecureContext) {
+                toast.error('La registrazione vocale richiede un contesto sicuro (HTTPS)');
+                return;
+            }
+            
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+                toast.error('Registrazione vocale non supportata su questo dispositivo/browser');
+                return;
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
@@ -309,7 +321,7 @@ export default function TicketDetailPage() {
             }, 1000);
         } catch (error) {
             console.error('Errore avvio registrazione:', error);
-            toast.error('Impossibile accedere al microfono');
+            toast.error(error.message || 'Impossibile accedere al microfono. Verifica i permessi del browser e che il sito sia sicuro (HTTPS).');
         }
     };
 
