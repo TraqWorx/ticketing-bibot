@@ -281,7 +281,7 @@ export async function getTaskDetail(taskGid: string): Promise<any> {
     try {
         const axios = require('axios');
         const response = await axios.get(
-            `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}?opt_fields=gid,name,notes,completed,created_at,modified_at,permalink_url,attachments.name,attachments.download_url,attachments.gid,attachments.view_url,due_on`,
+            `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}?opt_fields=gid,name,notes,completed,created_at,modified_at,permalink_url,attachments.name,attachments.download_url,attachments.gid,attachments.view_url,due_on,custom_fields`,
             {
                 headers: {
                     'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,

@@ -43,6 +43,27 @@ import { AsanaTaskDetail } from '@/types';
 import { toast } from 'react-toastify';
 import { formatDueDate } from '../hooks/useTickets';
 
+// Colore custom per badge priorità
+const getPriorityBg = (priority?: string) => {
+  switch (priority) {
+    case 'low': return 'green.100'; // verdino
+    case 'medium': return 'yellow.100'; // giallino
+    case 'high': return 'red.200'; // rosso chiaro
+    case 'urgent': return 'red.400'; // rosso acceso
+    default: return 'gray.100';
+  }
+};
+
+const getPriorityColor = (priority?: string) => {
+  switch (priority) {
+    case 'low': return 'green.700';
+    case 'medium': return 'yellow.800';
+    case 'high': return 'red.700';
+    case 'urgent': return 'white';
+    default: return 'gray.700';
+  }
+};
+
 // Stile per animazione pulse
 const pulseKeyframes = `
 @keyframes pulse {
@@ -179,8 +200,10 @@ export default function TicketDetailPage() {
             'media'
         ).toString().trim().toLowerCase();
         
-        if (["alta", "high", "urgente", "urgent"].includes(priorityValue)) {
+        if (["urgente", "urgent"].includes(priorityValue)) {
             return 'urgent';
+        } else if (["alta", "high"].includes(priorityValue)) {
+            return 'high';
         } else if (["media", "medium"].includes(priorityValue)) {
             return 'medium';
         } else if (["bassa", "low"].includes(priorityValue)) {
@@ -453,10 +476,8 @@ export default function TicketDetailPage() {
 
                                 {/* Badge Priorità */}
                                 <Badge
-                                    colorScheme={
-                                        getPriorityFromAsana(taskDetail) === 'urgent' ? 'red' :
-                                        getPriorityFromAsana(taskDetail) === 'medium' ? 'yellow' : 'gray'
-                                    }
+                                    bg={getPriorityBg(getPriorityFromAsana(taskDetail))}
+                                    color={getPriorityColor(getPriorityFromAsana(taskDetail))}
                                     px={3}
                                     py={1}
                                     borderRadius="full"
@@ -465,6 +486,7 @@ export default function TicketDetailPage() {
                                 >
                                     Priorità: {
                                         getPriorityFromAsana(taskDetail) === 'urgent' ? 'Urgente' :
+                                        getPriorityFromAsana(taskDetail) === 'high' ? 'Alta' :
                                         getPriorityFromAsana(taskDetail) === 'medium' ? 'Media' : 'Bassa'
                                     }
                                 </Badge>
