@@ -321,7 +321,7 @@ export default function TicketDetailPage() {
             }, 1000);
         } catch (error) {
             console.error('Errore avvio registrazione:', error);
-            toast.error(error.message || 'Impossibile accedere al microfono. Verifica i permessi del browser e che il sito sia sicuro (HTTPS).');
+            toast.error((error instanceof Error ? error.message : 'Impossibile accedere al microfono. Verifica i permessi del browser e che il sito sia sicuro (HTTPS).'));
         }
     };
 
