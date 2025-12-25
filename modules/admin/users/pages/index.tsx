@@ -50,7 +50,6 @@ export default function UsersManagementPage() {
   const [totalUsers, setTotalUsers] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [filterField, setFilterField] = useState<'all' | 'name' | 'email'>('all');
   const pageSize = 10;
   // Stato per modale errore autenticazione Firebase
   const [authErrorModal, setAuthErrorModal] = useState(false);
@@ -85,11 +84,8 @@ export default function UsersManagementPage() {
 
   // Handle search con debounce
   const handleSearch = () => {
-    // Costruisci query in base al filtro selezionato
-    let query = searchInput.trim();
-    if (query && filterField !== 'all') {
-      query = `${filterField}:${query}`;
-    }
+    // Cerca sempre in nome e email
+    const query = searchInput.trim();
     setSearchQuery(query);
     setCurrentPage(1); // Reset a pagina 1 quando si cerca
   };
@@ -178,7 +174,6 @@ export default function UsersManagementPage() {
 
   // Handle successo creazione ticket
   const handleTicketSuccess = () => {
-    toast.success('Ticket creato con successo per il cliente');
     setTicketUserTarget(null);
   };
 
@@ -197,39 +192,21 @@ export default function UsersManagementPage() {
           <Button colorScheme="red" onClick={() => { setAuthErrorModal(false); window.location.reload(); }}>Ricarica pagina</Button>
         </VStack>
       </Modal>
-      {/* Header */}
-      <Box>
-        <HStack justify="space-between" mb={2}>
-          <Heading size="xl">Gestione Clienti</Heading>
-          <Button
-            bg="black"
-            color="white"
-            _hover={{ bg: 'gray.800' }}
-            onClick={() => setIsModalOpen(true)}
-          >
-            <HStack gap={2}>
-              <FiPlus />
-              <span>Nuovo Cliente</span>
-            </HStack>
-          </Button>
-        </HStack>
-      </Box>
 
-      {/* Create User Modal */}
+      {/* Modale creazione utente */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Aggiungi Nuovo Cliente"
+        title="Nuovo Cliente"
         size="lg"
       >
         <CreateUserForm
-          key={isModalOpen ? 'open' : 'closed'}
           onSubmit={handleCreateUser}
           onCancel={() => setIsModalOpen(false)}
         />
       </Modal>
 
-      {/* Edit User Modal */}
+      {/* Modale modifica utente */}
       <Modal
         isOpen={!!editUser}
         onClose={() => setEditUser(null)}
@@ -245,100 +222,62 @@ export default function UsersManagementPage() {
         )}
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Modale conferma eliminazione */}
       <Modal
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
-        title="⚠️ Conferma Eliminazione"
+        title="Conferma Eliminazione"
         size="md"
       >
-        <VStack gap={4} align="stretch">
-          <Box bg="red.50" p={4} borderRadius="md" borderLeftWidth="4px" borderLeftColor="red.500">
-            <Text fontWeight="bold" color="red.700" mb={2}>
-              ATTENZIONE: Operazione irreversibile
-            </Text>
-            <Text fontSize="sm" color="gray.700" mb={3}>
-              Stai per eliminare definitivamente il cliente <strong>"{deleteConfirm?.clientName}"</strong>.
-            </Text>
-            <VStack align="start" gap={1} fontSize="sm" color="gray.700">
-              <Text>• Eliminazione account Firebase</Text>
-              <Text>• Eliminazione dati Firestore</Text>
-              <Text>• Perdita di tutti i dati associati</Text>
-            </VStack>
-          </Box>
-
-          <HStack gap={3} justify="flex-end" pt={2}>
+        <VStack gap={4} align="center" py={4}>
+          <Text color="red.500" fontWeight="bold" fontSize="lg">Attenzione!</Text>
+          <Text fontSize="md" color="gray.700" textAlign="center">
+            Sei sicuro di voler eliminare definitivamente il cliente <strong>{deleteConfirm?.clientName}</strong>?
+            <br />
+            Questa azione non può essere annullata.
+          </Text>
+          <HStack gap={3} pt={2}>
             <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
               Annulla
             </Button>
-            <Button
-              bg="red.500"
-              color="white"
-              _hover={{ bg: 'red.600' }}
-              onClick={confirmDelete}
-            >
-              Elimina Definitivamente
+            <Button colorScheme="red" onClick={confirmDelete}>
+              Elimina
             </Button>
           </HStack>
         </VStack>
       </Modal>
 
-      {/* Create Ticket Modal */}
+      {/* Modale creazione ticket */}
       <CreateTicketModal
         isOpen={!!ticketUserTarget}
         onClose={handleTicketModalClose}
         onSuccess={handleTicketSuccess}
-        targetUser={ticketUserTarget ? {
-          id: ticketUserTarget.id,
-          firstName: ticketUserTarget.firstName,
-          lastName: ticketUserTarget.lastName,
-          phone: ticketUserTarget.phone,
-          email: ticketUserTarget.email,
-          ghl_contact_id: ticketUserTarget.ghl_contact_id,
-        } : undefined}
+        {...(ticketUserTarget && { targetUser: ticketUserTarget })}
       />
 
-      {/* Users Table */}
+      {/* Header */}
       <Box>
-        <Flex justify="space-between" align="center" mb={4}>
-          <Heading size="md">Lista Clienti ({totalUsers})</Heading>
-          
-          {/* Search Bar con Filtri */}
-          <HStack gap={2}>
-            <select
-              value={filterField}
-              onChange={(e) => setFilterField(e.target.value as 'all' | 'name' | 'email')}
-              style={{
-                borderRadius: '8px',
-                borderWidth: '1px',
-                borderColor: '#E2E8F0',
-                background: 'white',
-                paddingLeft: '12px',
-                paddingRight: '12px',
-                paddingTop: '8px',
-                paddingBottom: '8px',
-                fontSize: '14px',
-                cursor: 'pointer',
-                height: '40px',
-                outline: 'none',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = '#CBD5E0'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = '#E2E8F0'}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'black';
-                e.currentTarget.style.boxShadow = '0 0 0 1px black';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#E2E8F0';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+        <VStack gap={2} align="stretch" mb={4}>
+          <Flex justify="space-between" align="center" direction="row" gap={3} wrap="wrap">
+            <Heading size="sm" color="gray.700" whiteSpace="nowrap">Clienti ({totalUsers})</Heading>
+            <Button
+              bg="black"
+              color="white"
+              _hover={{ bg: 'gray.800' }}
+              onClick={() => setIsModalOpen(true)}
+              size="sm"
+              flexShrink={0}
             >
-              <option value="all">Tutti i campi</option>
-              <option value="name">Nome</option>
-              <option value="email">Email</option>
-            </select>
-
-            <Box position="relative" w="250px">
+              <HStack gap={2} justify="center">
+                <FiPlus />
+                <Text display={{ sm: 'inline' }}>Nuovo Cliente</Text>
+              </HStack>
+            </Button>
+          </Flex>
+          
+          {/* Search Bar - Responsive */}
+          <Flex gap={2} direction={{ base: 'column', md: 'row' }} align={{ base: 'stretch', md: 'center' }}>
+            <Box position="relative" flex={{ base: 1, md: '0 0 300px' }}>
               <Icon
                 as={FiSearch}
                 color="gray.400"
@@ -350,11 +289,7 @@ export default function UsersManagementPage() {
                 pointerEvents="none"
               />
               <Input
-                placeholder={
-                  filterField === 'name' ? 'Cerca per nome...' :
-                  filterField === 'email' ? 'Cerca per email...' :
-                  'Cerca cliente...'
-                }
+                placeholder="Cerca per nome o email..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -367,18 +302,20 @@ export default function UsersManagementPage() {
                 _focus={{ borderColor: 'black', boxShadow: '0 0 0 1px black' }}
               />
             </Box>
-            
+
             <Button
               size="sm"
               bg="black"
               color="white"
               onClick={handleSearch}
               _hover={{ bg: 'gray.800' }}
+              flexShrink={0}
+              w={{ base: 'full', md: 'auto' }}
             >
               Cerca
             </Button>
-          </HStack>
-        </Flex>
+          </Flex>
+        </VStack>
 
         {isLoading ? (
           <Box p={8} textAlign="center">Caricamento...</Box>
@@ -393,71 +330,78 @@ export default function UsersManagementPage() {
             
             {/* Paginazione */}
             {totalPages > 1 && (
-              <Flex justify="space-between" align="center" mt={6} pt={4} borderTopWidth="1px">
-                <Text fontSize="sm" color="gray.600">
+              <VStack gap={4} mt={6} pt={4} borderTopWidth="1px" align="stretch">
+                <Text fontSize="sm" color="gray.600" textAlign="center">
                   Pagina {currentPage} di {totalPages}
                 </Text>
                 
-                <HStack gap={2}>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    <HStack gap={1}>
-                      <FiChevronLeft />
-                      <span>Precedente</span>
-                    </HStack>
-                  </Button>
-                  
-                  {/* Page numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(page => {
-                      // Mostra: prima pagina, ultima pagina, pagina corrente e ±1
-                      return page === 1 ||
-                             page === totalPages ||
-                             Math.abs(page - currentPage) <= 1;
-                    })
-                    .map((page, idx, arr) => {
-                      // Aggiungi "..." se ci sono gap
-                      const prevPage = arr[idx - 1];
-                      const showEllipsis = prevPage && page - prevPage > 1;
-                      
-                      return (
-                        <Box key={page}>
-                          {showEllipsis && (
-                            <Text px={2} color="gray.400">...</Text>
-                          )}
-                          <Button
-                            size="sm"
-                            variant={currentPage === page ? 'solid' : 'ghost'}
-                            bg={currentPage === page ? 'black' : 'transparent'}
-                            color={currentPage === page ? 'white' : 'gray.700'}
-                            _hover={{
-                              bg: currentPage === page ? 'gray.800' : 'gray.100'
-                            }}
-                            onClick={() => handlePageChange(page)}
-                          >
-                            {page}
-                          </Button>
-                        </Box>
-                      );
-                    })}
-                  
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    <HStack gap={1}>
-                      <span>Successiva</span>
-                      <FiChevronRight />
-                    </HStack>
-                  </Button>
-                </HStack>
-              </Flex>
+                <VStack gap={3} align="stretch">
+                  {/* Pulsanti di navigazione principale */}
+                  <HStack gap={2} justify="center">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      w={{ base: '50%', sm: 'auto' }}
+                    >
+                      <HStack gap={1} justify="center">
+                        <FiChevronLeft />
+                        <Text display={{ base: 'none', sm: 'inline' }}>Precedente</Text>
+                      </HStack>
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      w={{ base: '50%', sm: 'auto' }}
+                    >
+                      <HStack gap={1} justify="center">
+                        <Text display={{ base: 'none', sm: 'inline' }}>Successiva</Text>
+                        <FiChevronRight />
+                      </HStack>
+                    </Button>
+                  </HStack>
+
+                  {/* Page numbers - solo su desktop */}
+                  <HStack gap={2} justify="center" display={{ base: 'none', md: 'flex' }} wrap="wrap">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Mostra: prima pagina, ultima pagina, pagina corrente e ±1
+                        return page === 1 ||
+                               page === totalPages ||
+                               Math.abs(page - currentPage) <= 1;
+                      })
+                      .map((page, idx, arr) => {
+                        // Aggiungi "..." se ci sono gap
+                        const prevPage = arr[idx - 1];
+                        const showEllipsis = prevPage && page - prevPage > 1;
+                        
+                        return (
+                          <Box key={page}>
+                            {showEllipsis && (
+                              <Text px={2} color="gray.400">...</Text>
+                            )}
+                            <Button
+                              size="sm"
+                              variant={currentPage === page ? 'solid' : 'ghost'}
+                              bg={currentPage === page ? 'black' : 'transparent'}
+                              color={currentPage === page ? 'white' : 'gray.700'}
+                              _hover={{
+                                bg: currentPage === page ? 'gray.800' : 'gray.100'
+                              }}
+                              onClick={() => handlePageChange(page)}
+                            >
+                              {page}
+                            </Button>
+                          </Box>
+                        );
+                      })}
+                  </HStack>
+                </VStack>
+              </VStack>
             )}
           </>
         )}

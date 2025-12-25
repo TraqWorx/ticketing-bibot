@@ -995,7 +995,7 @@ export default function TicketDetailPage() {
                                         size="lg"
                                         onClick={handleSubmitComment}
                                         loading={isSubmitting}
-                                        disabled={(!newComment.trim() && attachments.length === 0) || taskDetail.completed}
+                                        disabled={!newComment.trim() || taskDetail.completed}
                                         borderRadius="full"
                                         flexShrink={0}
                                     >

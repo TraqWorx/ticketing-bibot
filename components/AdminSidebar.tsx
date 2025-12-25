@@ -117,8 +117,12 @@ export const AdminMobileSidebar = () => {
                 position="fixed"
                 top={4}
                 left={4}
-                zIndex={10}
+                zIndex={101}
                 bg="white"
+                color="black"
+                border="1px"
+                borderColor="gray.200"
+                _hover={{ bg: 'gray.50' }}
                 display={{ base: 'flex', lg: 'none' }}
             >
                 <FiMenu />

@@ -16,14 +16,13 @@
  * Returns: { success, data: story, attachmentsCount, attachmentErrors }
  */
 
-import { NextApiRequest, NextApiResponse } from 'next';
-import { IncomingForm, File } from 'formidable';
 import { createTaskStory, uploadAsanaAttachment } from '@/lib/asana/asanaService';
-import { getAdminClientRepliedMessage } from '@/lib/ghl/messages';
-import { updateTicketOnReply, getTicket } from '@/lib/ticket/ticketService';
 import { sendTicketRepliedByClientEvent } from '@/lib/ghl/ghlService';
-import fs from 'fs/promises';
 import { transcribeAudioWithWhisper } from '@/lib/openaiWhisper';
+import { getTicket, updateTicketOnReply } from '@/lib/ticket/ticketService';
+import { IncomingForm } from 'formidable';
+import fs from 'fs/promises';
+import { NextApiRequest, NextApiResponse } from 'next';
 
 // Disabilita body parser di Next.js per gestire multipart/form-data
 export const config = {
@@ -70,6 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let attachmentsUploaded = 0;
     let totalAttachments = 0;
     const audioSummaries: string[] = [];
+    const attachmentNames: string[] = [];
 
     if (files.attachments) {
       const attachmentFiles = Array.isArray(files.attachments)
@@ -80,6 +80,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
           const fileBuffer = await fs.readFile(file.filepath);
           let summary = '';
+          // Raccogli il nome del file per il messaggio
+          attachmentNames.push(file.originalFilename || 'file_senza_nome');
           // Upload su Asana
           let uploaded = await uploadAsanaAttachment(
             taskGid,
@@ -116,6 +118,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (audioSummaries.length > 0) {
       commentText = audioSummaries.join('\n\n');
     }
+    
+    // Aggiungi l'elenco degli allegati al messaggio se presenti
+    if (attachmentNames.length > 0) {
+      commentText += '\n\n📎 Allegati:\n' + attachmentNames.map(name => `• ${name}`).join('\n');
+    }
+    
     // Commento creato per risposta del cliente
     const result = await createTaskStory(taskGid, commentText, true);
 

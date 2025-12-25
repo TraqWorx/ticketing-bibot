@@ -16,13 +16,12 @@
  * Returns: { success, taskGid, taskUrl, attachmentsCount, whatsappErrors }
  */
 
-import { NextApiRequest, NextApiResponse } from 'next';
-import { IncomingForm, File } from 'formidable';
 import { createAsanaTask, uploadAsanaAttachment } from '@/lib/asana/asanaService';
-import { sendMessage, sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
-import { getClientTicketCreatedMessage, getAdminTicketCreatedMessage } from '@/lib/ghl/messages';
+import { sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
 import { createTicket } from '@/lib/ticket/ticketService';
+import { IncomingForm } from 'formidable';
 import fs from 'fs/promises';
+import { NextApiRequest, NextApiResponse } from 'next';
 
 // Disabilita body parser di Next.js per gestire multipart/form-data
 export const config = {

@@ -31,7 +31,7 @@ import { FiSearch, FiPlus, FiFilter, FiRefreshCw, FiCheck, FiChevronLeft, FiChev
 import { TicketCard } from '../components/TicketCard';
 import { CreateTicketModal } from '../components/CreateTicketModal';
 import { useTickets } from '../hooks/useTickets';
-import { TicketStatus, Ticket } from '../types';
+import { TicketStatus, Ticket, TicketPriority } from '../types';
 import { toast } from 'react-toastify';
 
 export default function TicketingPage() {
@@ -40,15 +40,28 @@ export default function TicketingPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement>(null);
-  
+
   // Imposta itemsPerPage in base alla dimensione dello schermo
   const itemsPerPage = useBreakpointValue({ base: 5, md: 8 }) || 8;
-  
+
   // Filtri status con checkbox - default aperti e in lavorazione
   const [statusFilters, setStatusFilters] = useState({
     open: true,
     inProgress: true,
     completed: false,
+  });
+
+  // Filtri priorità con checkbox - default nessuna selezionata
+  const [priorityFilters, setPriorityFilters] = useState({
+    low: false,
+    medium: false,
+    high: false,
+  });
+
+  // Filtri "in attesa di" con checkbox - default nessuna selezionata
+  const [waitingFilters, setWaitingFilters] = useState({
+    client: false,
+    admin: false,
   });
 
   // Chiudi il menu filtri quando clicchi al di fuori
@@ -67,30 +80,48 @@ export default function TicketingPage() {
     }
   }, [showFilterMenu]);
 
-  // Filtra tickets per titolo, ID e status
+  // Filtra tickets per titolo, ID, status, priorità e attesa risposta
   const filteredTickets = tickets.filter(ticket => {
     // Filtro per ricerca (titolo o ID)
     const matchesSearch = searchQuery
       ? ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ticket.id.toLowerCase().includes(searchQuery.toLowerCase())
+      ticket.id.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
-    
+
     // Filtro per status basato sulle sezioni Asana
     const isOpen = ticket.status === TicketStatus.OPEN;
     const isInProgress = ticket.status === TicketStatus.IN_PROGRESS;
     const isCompleted = ticket.status === TicketStatus.CLOSED || ticket.status === TicketStatus.RESOLVED;
-    
-    const hasAnyFilterActive = statusFilters.open || statusFilters.inProgress || statusFilters.completed;
-    const matchesStatus = !hasAnyFilterActive || 
-      (statusFilters.open && isOpen) || 
+
+    const hasAnyStatusFilterActive = statusFilters.open || statusFilters.inProgress || statusFilters.completed;
+    const matchesStatus = !hasAnyStatusFilterActive ||
+      (statusFilters.open && isOpen) ||
       (statusFilters.inProgress && isInProgress) ||
       (statusFilters.completed && isCompleted);
-    
-    return matchesSearch && matchesStatus;
+
+    // Filtro per priorità
+    const hasAnyPriorityFilterActive = priorityFilters.low || priorityFilters.medium || priorityFilters.high;
+    const matchesPriority = !hasAnyPriorityFilterActive || (
+      (priorityFilters.low && ticket.priority === TicketPriority.LOW) ||
+      (priorityFilters.medium && ticket.priority === TicketPriority.MEDIUM) ||
+      (priorityFilters.high && ticket.priority === TicketPriority.HIGH)
+    );
+
+    // Filtro per "in attesa di"
+    const hasAnyWaitingFilterActive = waitingFilters.client || waitingFilters.admin;
+    const matchesWaiting = !hasAnyWaitingFilterActive || ticket.waitingFor === null || (
+      (waitingFilters.client && ticket.waitingFor === 'client') ||
+      (waitingFilters.admin && ticket.waitingFor === 'admin')
+    );
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesWaiting;
   });
 
   // Conta quanti filtri sono attivi
-  const activeFiltersCount = Object.values(statusFilters).filter(Boolean).length;
+  const activeFiltersCount = 
+    Object.values(statusFilters).filter(Boolean).length +
+    Object.values(priorityFilters).filter(Boolean).length +
+    Object.values(waitingFilters).filter(Boolean).length;
 
   // Handler apertura modale creazione
   const handleCreateTicket = () => {
@@ -101,7 +132,7 @@ export default function TicketingPage() {
   const handleCreateSuccess = (newTicket: Ticket) => {
     // Chiudi modale
     setIsCreateModalOpen(false);
-    
+
     // Aggiungi il nuovo ticket alla lista locale
     addTicket?.(newTicket);
   };
@@ -112,16 +143,16 @@ export default function TicketingPage() {
       <Flex justify="space-between" align="center">
         <Box>
           <Heading size="lg" fontWeight="700" color="gray.900">
-            I Miei Ticket
+            Ticket
           </Heading>
           <Text fontSize="sm" color="gray.600" mt={1}>
-            {searchQuery 
-              ? `${filteredTickets.length} di ${tickets.length} ticket` 
+            {searchQuery
+              ? `${filteredTickets.length} di ${tickets.length} ticket`
               : `${tickets.length} ticket totali`
             }
           </Text>
         </Box>
-        
+
         <HStack gap={3}>
           <Box position="relative" ref={filterMenuRef}>
             <Button
@@ -140,7 +171,7 @@ export default function TicketingPage() {
                 )}
               </HStack>
             </Button>
-            
+
             {/* Menu Filtri con Checkbox */}
             {showFilterMenu && (
               <Box
@@ -161,7 +192,7 @@ export default function TicketingPage() {
                   <Text fontSize="xs" fontWeight="600" color="gray.500" textTransform="uppercase">
                     Stato Ticket
                   </Text>
-                  
+
                   {/* Opzione Aperto */}
                   <Flex
                     align="center"
@@ -191,7 +222,7 @@ export default function TicketingPage() {
                       Aperti
                     </Text>
                   </Flex>
-                  
+
                   {/* Opzione In Lavorazione */}
                   <Flex
                     align="center"
@@ -221,7 +252,7 @@ export default function TicketingPage() {
                       In Lavorazione
                     </Text>
                   </Flex>
-                  
+
                   {/* Opzione Completato */}
                   <Flex
                     align="center"
@@ -252,10 +283,175 @@ export default function TicketingPage() {
                     </Text>
                   </Flex>
                 </VStack>
+
+                {/* Sezione Priorità */}
+                <VStack align="stretch" gap={3} pt={3} borderTop="1px" borderColor="gray.100">
+                  <Text fontSize="xs" fontWeight="600" color="gray.500" textTransform="uppercase">
+                    Priorità
+                  </Text>
+
+                  {/* Opzione Bassa */}
+                  <Flex
+                    align="center"
+                    gap={2}
+                    cursor="pointer"
+                    onClick={() => setPriorityFilters(prev => ({ ...prev, low: !prev.low }))}
+                    _hover={{ bg: 'gray.50' }}
+                    p={2}
+                    borderRadius="md"
+                  >
+                    <Box
+                      w="18px"
+                      h="18px"
+                      borderWidth="2px"
+                      borderColor={priorityFilters.low ? 'green.500' : 'gray.300'}
+                      borderRadius="md"
+                      bg={priorityFilters.low ? 'green.500' : 'transparent'}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      {priorityFilters.low && (
+                        <Icon as={FiCheck} color="white" boxSize="12px" />
+                      )}
+                    </Box>
+                    <Text fontSize="sm" color="gray.700">
+                      Bassa
+                    </Text>
+                  </Flex>
+
+                  {/* Opzione Media */}
+                  <Flex
+                    align="center"
+                    gap={2}
+                    cursor="pointer"
+                    onClick={() => setPriorityFilters(prev => ({ ...prev, medium: !prev.medium }))}
+                    _hover={{ bg: 'gray.50' }}
+                    p={2}
+                    borderRadius="md"
+                  >
+                    <Box
+                      w="18px"
+                      h="18px"
+                      borderWidth="2px"
+                      borderColor={priorityFilters.medium ? 'blue.500' : 'gray.300'}
+                      borderRadius="md"
+                      bg={priorityFilters.medium ? 'blue.500' : 'transparent'}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      {priorityFilters.medium && (
+                        <Icon as={FiCheck} color="white" boxSize="12px" />
+                      )}
+                    </Box>
+                    <Text fontSize="sm" color="gray.700">
+                      Media
+                    </Text>
+                  </Flex>
+
+                  {/* Opzione Alta */}
+                  <Flex
+                    align="center"
+                    gap={2}
+                    cursor="pointer"
+                    onClick={() => setPriorityFilters(prev => ({ ...prev, high: !prev.high }))}
+                    _hover={{ bg: 'gray.50' }}
+                    p={2}
+                    borderRadius="md"
+                  >
+                    <Box
+                      w="18px"
+                      h="18px"
+                      borderWidth="2px"
+                      borderColor={priorityFilters.high ? 'orange.500' : 'gray.300'}
+                      borderRadius="md"
+                      bg={priorityFilters.high ? 'orange.500' : 'transparent'}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      {priorityFilters.high && (
+                        <Icon as={FiCheck} color="white" boxSize="12px" />
+                      )}
+                    </Box>
+                    <Text fontSize="sm" color="gray.700">
+                      Alta
+                    </Text>
+                  </Flex>
+
+                </VStack>
+
+                {/* Sezione In Attesa Di */}
+                <VStack align="stretch" gap={3} pt={3} borderTop="1px" borderColor="gray.100">
+                  <Text fontSize="xs" fontWeight="600" color="gray.500" textTransform="uppercase">
+                    In Attesa Di
+                  </Text>
+
+                  {/* Opzione Risposta Cliente */}
+                  <Flex
+                    align="center"
+                    gap={2}
+                    cursor="pointer"
+                    onClick={() => setWaitingFilters(prev => ({ ...prev, client: !prev.client }))}
+                    _hover={{ bg: 'gray.50' }}
+                    p={2}
+                    borderRadius="md"
+                  >
+                    <Box
+                      w="18px"
+                      h="18px"
+                      borderWidth="2px"
+                      borderColor={waitingFilters.client ? 'purple.500' : 'gray.300'}
+                      borderRadius="md"
+                      bg={waitingFilters.client ? 'purple.500' : 'transparent'}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      {waitingFilters.client && (
+                        <Icon as={FiCheck} color="white" boxSize="12px" />
+                      )}
+                    </Box>
+                    <Text fontSize="sm" color="gray.700">
+                      Risposta Cliente
+                    </Text>
+                  </Flex>
+
+                  {/* Opzione Risposta Supporto */}
+                  <Flex
+                    align="center"
+                    gap={2}
+                    cursor="pointer"
+                    onClick={() => setWaitingFilters(prev => ({ ...prev, admin: !prev.admin }))}
+                    _hover={{ bg: 'gray.50' }}
+                    p={2}
+                    borderRadius="md"
+                  >
+                    <Box
+                      w="18px"
+                      h="18px"
+                      borderWidth="2px"
+                      borderColor={waitingFilters.admin ? 'green.500' : 'gray.300'}
+                      borderRadius="md"
+                      bg={waitingFilters.admin ? 'green.500' : 'transparent'}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      {waitingFilters.admin && (
+                        <Icon as={FiCheck} color="white" boxSize="12px" />
+                      )}
+                    </Box>
+                    <Text fontSize="sm" color="gray.700">
+                      Risposta Supporto
+                    </Text>
+                  </Flex>
+                </VStack>
               </Box>
             )}
           </Box>
-          
+
           <Button
             size="sm"
             variant="outline"
@@ -267,7 +463,7 @@ export default function TicketingPage() {
           >
             <Icon as={FiRefreshCw} />
           </Button>
-          
+
           <Button
             size="sm"
             bg="black"
@@ -351,14 +547,14 @@ export default function TicketingPage() {
           (() => {
             // Calcola quante colonne sono attive per la responsività desktop
             const activeColumnsCount = Object.values(statusFilters).filter(Boolean).length;
-            
+
             return (
               <Box
                 display={{ base: 'block', md: 'grid' }}
-                gridTemplateColumns={{ 
-                  md: activeColumnsCount === 1 ? '1fr' : 
-                      activeColumnsCount === 2 ? '1fr 1fr' : 
-                      '1fr 1fr 1fr' 
+                gridTemplateColumns={{
+                  md: activeColumnsCount === 1 ? '1fr' :
+                    activeColumnsCount === 2 ? '1fr 1fr' :
+                      '1fr 1fr 1fr'
                 }}
                 gap={{ base: 6, md: 4 }}
                 alignItems="start"
@@ -371,9 +567,9 @@ export default function TicketingPage() {
                   const startIndex = (currentPage - 1) * itemsPerPage;
                   const endIndex = startIndex + itemsPerPage;
                   const paginatedTickets = openTickets.slice(startIndex, endIndex);
-                  
+
                   return (
-                    <Box 
+                    <Box
                       display="flex"
                       flexDirection="column"
                       minH="200px"
@@ -452,9 +648,9 @@ export default function TicketingPage() {
                   const startIndex = (currentPage - 1) * itemsPerPage;
                   const endIndex = startIndex + itemsPerPage;
                   const paginatedTickets = inProgressTickets.slice(startIndex, endIndex);
-                  
+
                   return (
-                    <Box 
+                    <Box
                       display="flex"
                       flexDirection="column"
                       minH="200px"
@@ -525,167 +721,167 @@ export default function TicketingPage() {
                   );
                 })() : null}
 
-            {/* Colonna Completati - visualizzazione normale */}
-            {statusFilters.completed && !statusFilters.open && !statusFilters.inProgress ? (() => {
-              const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED);
-              const totalPages = getTotalPages('completed', completedTickets.length);
-              const currentPage = pagination.completed.currentPage;
-              const startIndex = (currentPage - 1) * itemsPerPage;
-              const endIndex = startIndex + itemsPerPage;
-              const paginatedTickets = completedTickets.slice(startIndex, endIndex);
-              
-              return (
-                <Box 
-                  display="flex"
-                  flexDirection="column"
-                  minH="200px"
-                  gridColumn="1 / -1"
-                >
-                  <HStack mb={3} gap={2}>
-                    <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
-                      Completati
-                    </Text>
-                    <Badge colorScheme="green" fontSize="xs">
-                      {completedTickets.length}
-                    </Badge>
-                  </HStack>
-                  <VStack align="stretch" gap={2}>
-                    {paginatedTickets.map((ticket, index) => (
-                      <TicketCard
-                        key={ticket.id}
-                        ticket={ticket}
-                        index={startIndex + index}
-                      />
-                    ))}
-                    {completedTickets.length === 0 && (
-                      <Box
-                        p={4}
-                        borderRadius="md"
-                        borderWidth="1px"
-                        borderStyle="dashed"
-                        borderColor="gray.300"
-                        textAlign="center"
-                      >
-                        <Text fontSize="xs" color="gray.400">
-                          Nessun ticket completato
-                        </Text>
-                      </Box>
-                    )}
-                    {totalPages > 1 && (
-                      <HStack justify="center" mt={2} gap={1}>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          disabled={currentPage === 1}
-                          onClick={() => setPage('completed', currentPage - 1)}
-                        >
-                          <Icon as={FiChevronLeft} />
-                        </Button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                          <Button
-                            key={page}
-                            size="xs"
-                            variant={page === currentPage ? 'solid' : 'ghost'}
-                            colorScheme={page === currentPage ? 'green' : 'gray'}
-                            onClick={() => setPage('completed', page)}
-                          >
-                            {page}
-                          </Button>
-                        ))}
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          disabled={currentPage === totalPages}
-                          onClick={() => setPage('completed', currentPage + 1)}
-                        >
-                          <Icon as={FiChevronRight} />
-                        </Button>
-                      </HStack>
-                    )}
-                  </VStack>
-                </Box>
-              );
-            })() : null}
+                {/* Colonna Completati - visualizzazione normale */}
+                {statusFilters.completed && !statusFilters.open && !statusFilters.inProgress ? (() => {
+                  const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED);
+                  const totalPages = getTotalPages('completed', completedTickets.length);
+                  const currentPage = pagination.completed.currentPage;
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedTickets = completedTickets.slice(startIndex, endIndex);
 
-            {/* Se solo completati è attivo, mostra lista semplice */}
-            {statusFilters.completed && (statusFilters.open || statusFilters.inProgress) ? (() => {
-              const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED);
-              const totalPages = getTotalPages('completed', completedTickets.length);
-              const currentPage = pagination.completed.currentPage;
-              const startIndex = (currentPage - 1) * itemsPerPage;
-              const endIndex = startIndex + itemsPerPage;
-              const paginatedTickets = completedTickets.slice(startIndex, endIndex);
-              return (
-                <Box 
-                  display="flex"
-                  flexDirection="column"
-                  minH="200px"
-                >
-                  <HStack mb={3} gap={2}>
-                    <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
-                      Completati
-                    </Text>
-                    <Badge colorScheme="green" fontSize="xs">
-                      {completedTickets.length}
-                    </Badge>
-                  </HStack>
-                  <VStack align="stretch" gap={2}>
-                    {paginatedTickets.map((ticket, index) => (
-                      <TicketCard
-                        key={ticket.id}
-                        ticket={ticket}
-                        index={startIndex + index}
-                      />
-                    ))}
-                    {completedTickets.length === 0 && (
-                      <Box
-                        p={4}
-                        borderRadius="md"
-                        borderWidth="1px"
-                        borderStyle="dashed"
-                        borderColor="gray.300"
-                        textAlign="center"
-                      >
-                        <Text fontSize="xs" color="gray.400">
-                          Nessun ticket completato
+                  return (
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      minH="200px"
+                      gridColumn="1 / -1"
+                    >
+                      <HStack mb={3} gap={2}>
+                        <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
+                          Completati
                         </Text>
-                      </Box>
-                    )}
-                    {totalPages > 1 && (
-                      <HStack justify="center" mt={2} gap={1}>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          disabled={currentPage === 1}
-                          onClick={() => setPage('completed', currentPage - 1)}
-                        >
-                          <Icon as={FiChevronLeft} />
-                        </Button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                          <Button
-                            key={page}
-                            size="xs"
-                            variant={page === currentPage ? 'solid' : 'ghost'}
-                            colorScheme={page === currentPage ? 'green' : 'gray'}
-                            onClick={() => setPage('completed', page)}
-                          >
-                            {page}
-                          </Button>
-                        ))}
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          disabled={currentPage === totalPages}
-                          onClick={() => setPage('completed', currentPage + 1)}
-                        >
-                          <Icon as={FiChevronRight} />
-                        </Button>
+                        <Badge colorScheme="green" fontSize="xs">
+                          {completedTickets.length}
+                        </Badge>
                       </HStack>
-                    )}
-                  </VStack>
-                </Box>
-              );
-            })() : null}
+                      <VStack align="stretch" gap={2}>
+                        {paginatedTickets.map((ticket, index) => (
+                          <TicketCard
+                            key={ticket.id}
+                            ticket={ticket}
+                            index={startIndex + index}
+                          />
+                        ))}
+                        {completedTickets.length === 0 && (
+                          <Box
+                            p={4}
+                            borderRadius="md"
+                            borderWidth="1px"
+                            borderStyle="dashed"
+                            borderColor="gray.300"
+                            textAlign="center"
+                          >
+                            <Text fontSize="xs" color="gray.400">
+                              Nessun ticket completato
+                            </Text>
+                          </Box>
+                        )}
+                        {totalPages > 1 && (
+                          <HStack justify="center" mt={2} gap={1}>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              disabled={currentPage === 1}
+                              onClick={() => setPage('completed', currentPage - 1)}
+                            >
+                              <Icon as={FiChevronLeft} />
+                            </Button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                size="xs"
+                                variant={page === currentPage ? 'solid' : 'ghost'}
+                                colorScheme={page === currentPage ? 'green' : 'gray'}
+                                onClick={() => setPage('completed', page)}
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              disabled={currentPage === totalPages}
+                              onClick={() => setPage('completed', currentPage + 1)}
+                            >
+                              <Icon as={FiChevronRight} />
+                            </Button>
+                          </HStack>
+                        )}
+                      </VStack>
+                    </Box>
+                  );
+                })() : null}
+
+                {/* Se solo completati è attivo, mostra lista semplice */}
+                {statusFilters.completed && (statusFilters.open || statusFilters.inProgress) ? (() => {
+                  const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED);
+                  const totalPages = getTotalPages('completed', completedTickets.length);
+                  const currentPage = pagination.completed.currentPage;
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedTickets = completedTickets.slice(startIndex, endIndex);
+                  return (
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      minH="200px"
+                    >
+                      <HStack mb={3} gap={2}>
+                        <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
+                          Completati
+                        </Text>
+                        <Badge colorScheme="green" fontSize="xs">
+                          {completedTickets.length}
+                        </Badge>
+                      </HStack>
+                      <VStack align="stretch" gap={2}>
+                        {paginatedTickets.map((ticket, index) => (
+                          <TicketCard
+                            key={ticket.id}
+                            ticket={ticket}
+                            index={startIndex + index}
+                          />
+                        ))}
+                        {completedTickets.length === 0 && (
+                          <Box
+                            p={4}
+                            borderRadius="md"
+                            borderWidth="1px"
+                            borderStyle="dashed"
+                            borderColor="gray.300"
+                            textAlign="center"
+                          >
+                            <Text fontSize="xs" color="gray.400">
+                              Nessun ticket completato
+                            </Text>
+                          </Box>
+                        )}
+                        {totalPages > 1 && (
+                          <HStack justify="center" mt={2} gap={1}>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              disabled={currentPage === 1}
+                              onClick={() => setPage('completed', currentPage - 1)}
+                            >
+                              <Icon as={FiChevronLeft} />
+                            </Button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                              <Button
+                                key={page}
+                                size="xs"
+                                variant={page === currentPage ? 'solid' : 'ghost'}
+                                colorScheme={page === currentPage ? 'green' : 'gray'}
+                                onClick={() => setPage('completed', page)}
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              disabled={currentPage === totalPages}
+                              onClick={() => setPage('completed', currentPage + 1)}
+                            >
+                              <Icon as={FiChevronRight} />
+                            </Button>
+                          </HStack>
+                        )}
+                      </VStack>
+                    </Box>
+                  );
+                })() : null}
               </Box>
             );
           })()

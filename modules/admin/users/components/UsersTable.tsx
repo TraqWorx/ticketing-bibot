@@ -18,9 +18,11 @@ import {
   IconButton,
   HStack,
   Text,
+  VStack,
+  Icon,
 } from '@chakra-ui/react';
 import { Tooltip } from '@chakra-ui/react';
-import { FiEdit2, FiTrash2, FiFileText } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiFileText, FiMail, FiPhone, FiUser } from 'react-icons/fi';
 import { User } from '@/types';
 
 interface UsersTableProps {
@@ -41,39 +43,45 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket }: User
 
   return (
     <Box overflowX="auto" bg="white" borderRadius="lg" borderWidth="1px">
-      <Box as="table" width="100%" css={{ borderCollapse: 'collapse' }}>
+      <Box as="table" width="100%" css={{ borderCollapse: 'collapse' }} minW="800px">
         <Box as="thead" bg="gray.50" borderBottomWidth="1px">
           <Box as="tr">
-            <Box as="th" p={3} textAlign="center" fontSize="sm" fontWeight="semibold" width="60px">#</Box>
-            <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">ID</Box>
-            <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">Nome</Box>
-            <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">Email</Box>
-            <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">Telefono</Box>
-            <Box as="th" p={3} textAlign="left" fontSize="sm" fontWeight="semibold">GHL ID</Box>
-            <Box as="th" p={3} textAlign="right" fontSize="sm" fontWeight="semibold">Azioni</Box>
+            <Box as="th" p={2} textAlign="center" fontSize="xs" fontWeight="semibold" width="50px">#</Box>
+            <Box as="th" p={2} textAlign="left" fontSize="xs" fontWeight="semibold">Nome</Box>
+            <Box as="th" p={2} textAlign="left" fontSize="xs" fontWeight="semibold">Email</Box>
+            <Box as="th" p={2} textAlign="left" fontSize="xs" fontWeight="semibold">Telefono</Box>
+            <Box as="th" p={2} textAlign="left" fontSize="xs" fontWeight="semibold">GHL ID</Box>
+            <Box as="th" p={2} textAlign="right" fontSize="xs" fontWeight="semibold" width="120px">Azioni</Box>
           </Box>
         </Box>
         <Box as="tbody">
           {users.map((user, index) => (
             <Box as="tr" key={user.id} borderBottomWidth="1px" _hover={{ bg: 'gray.50' }}>
-              <Box as="td" p={3} textAlign="center" color="gray.500" fontSize="sm">{index + 1}</Box>
-              <Box as="td" p={3}>
-                <Text fontSize="xs" color="gray.600" fontFamily="mono">{user.id}</Text>
+              <Box as="td" p={2} textAlign="center" color="gray.500" fontSize="xs">{index + 1}</Box>
+              <Box as="td" p={2} fontWeight="medium" fontSize="sm">{`${user.firstName} ${user.lastName}`}</Box>
+              <Box as="td" p={2} fontSize="sm">
+                <HStack gap={1}>
+                  <Icon as={FiMail} color="gray.500" boxSize={3} />
+                  <Text fontSize="xs" color="gray.700">{user.email}</Text>
+                </HStack>
               </Box>
-              <Box as="td" p={3} fontWeight="medium">{`${user.firstName} ${user.lastName}`}</Box>
-              <Box as="td" p={3}>{user.email}</Box>
-              <Box as="td" p={3}>{user.phone}</Box>
-              <Box as="td" p={3}>
-                <Text fontSize="sm" color="gray.600">{user.ghl_contact_id}</Text>
+              <Box as="td" p={2} fontSize="sm">
+                <HStack gap={1}>
+                  <Icon as={FiPhone} color="gray.500" boxSize={3} />
+                  <Text fontSize="xs" color="gray.700">{user.phone}</Text>
+                </HStack>
               </Box>
-              <Box as="td" p={3}>
-                <HStack gap={2} justify="flex-end">
+              <Box as="td" p={2}>
+                <Text fontSize="xs" color="gray.600" fontFamily="mono">{user.ghl_contact_id}</Text>
+              </Box>
+              <Box as="td" p={2}>
+                <HStack gap={1} justify="flex-end">
                   {onCreateTicket && (
                     <Tooltip.Root>
                       <Tooltip.Trigger asChild>
                         <IconButton
-                          aria-label="Crea ticket per utente"
-                          size="sm"
+                          aria-label="Crea ticket"
+                          size="xs"
                           variant="ghost"
                           colorScheme="blue"
                           onClick={() => onCreateTicket(user)}
@@ -82,7 +90,7 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket }: User
                         </IconButton>
                       </Tooltip.Trigger>
                       <Tooltip.Positioner>
-                        <Tooltip.Content>Crea ticket per utente</Tooltip.Content>
+                        <Tooltip.Content>Crea ticket</Tooltip.Content>
                       </Tooltip.Positioner>
                     </Tooltip.Root>
                   )}
@@ -91,7 +99,7 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket }: User
                       <Tooltip.Trigger asChild>
                         <IconButton
                           aria-label="Modifica"
-                          size="sm"
+                          size="xs"
                           variant="ghost"
                           onClick={() => onEdit(user)}
                         >
@@ -108,7 +116,7 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket }: User
                       <Tooltip.Trigger asChild>
                         <IconButton
                           aria-label="Elimina"
-                          size="sm"
+                          size="xs"
                           variant="ghost"
                           colorScheme="red"
                           onClick={() => onDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
