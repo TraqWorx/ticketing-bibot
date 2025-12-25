@@ -2,7 +2,7 @@
  * API ENDPOINT: /api/webhooks/asana/test
  *
  * Endpoint di test per verificare il funzionamento del webhook Asana
- * Simula un evento di nuovo commento
+ * Simula eventi: nuovo commento, cambio nome task, task completato
  */
 
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -13,23 +13,84 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Payload di esempio per testare un nuovo commento
-    const testEvent = {
-      events: [
-        {
-          action: 'added',
-          resource: {
-            resource_type: 'story',
-            resource_subtype: 'comment_added',
-            gid: 'test_story_gid'
-          },
-          parent: {
-            resource_type: 'task',
-            gid: req.body.taskGid || '1201234567890123' // Usa taskGid dal body o default
-          }
-        }
-      ]
-    };
+    const { eventType, taskGid, newName } = req.body;
+
+    let testEvent: any;
+
+    switch (eventType) {
+      case 'comment':
+        testEvent = {
+          events: [
+            {
+              action: 'added',
+              resource: {
+                resource_type: 'story',
+                resource_subtype: 'comment_added',
+                gid: 'test_story_gid'
+              },
+              parent: {
+                resource_type: 'task',
+                gid: taskGid || '1201234567890123'
+              }
+            }
+          ]
+        };
+        break;
+
+      case 'name_change':
+        testEvent = {
+          events: [
+            {
+              action: 'changed',
+              resource: {
+                resource_type: 'task',
+                gid: taskGid || '1201234567890123'
+              },
+              change: {
+                field: 'name',
+                new_value: newName || 'Nuovo titolo del ticket'
+              }
+            }
+          ]
+        };
+        break;
+
+      case 'complete':
+        testEvent = {
+          events: [
+            {
+              action: 'changed',
+              resource: {
+                resource_type: 'task',
+                gid: taskGid || '1201234567890123'
+              },
+              change: {
+                field: 'completed',
+                new_value: true
+              }
+            }
+          ]
+        };
+        break;
+
+      default:
+        testEvent = {
+          events: [
+            {
+              action: 'added',
+              resource: {
+                resource_type: 'story',
+                resource_subtype: 'comment_added',
+                gid: 'test_story_gid'
+              },
+              parent: {
+                resource_type: 'task',
+                gid: taskGid || '1201234567890123'
+              }
+            }
+          ]
+        };
+    }
 
     console.log('[Asana Webhook Test] Simulating webhook call with payload:', testEvent);
 
@@ -43,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       success: true,
-      message: 'Test webhook call completed',
+      message: `Test webhook call completed for ${eventType || 'comment'}`,
       response: response.data
     });
 

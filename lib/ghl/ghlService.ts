@@ -21,6 +21,7 @@ import {
     GHLTicketCreatedPayload,
     GHLTicketRepliedPayload,
     GHLTicketClosedPayload,
+    GHLTicketReopenedPayload,
     MessageAuthor,
 } from '@/types/ticket';
 
@@ -424,7 +425,7 @@ export async function sendTicketRepliedByAdminEvent(params: {
  */
 export async function sendTicketClosedEvent(params: {
     clientId: string;
-    ghlContactId: string;
+    ghlContactId?: string;
     ticketId: string;
 }): Promise<boolean> {
     const webhookUrl = process.env.GHL_WEBHOOK_TICKET_CLOSED;
@@ -437,6 +438,32 @@ export async function sendTicketClosedEvent(params: {
             ghlContactId: params.ghlContactId,
             ticketId: params.ticketId,
             closedAt: new Date().toISOString(),
+        },
+    };
+
+    return sendWebhookToUrl(webhookUrl || '', payload);
+}
+
+/**
+ * Invia evento ticket riaperto a GHL
+ */
+export async function sendTicketReopenedEvent(params: {
+    clientId: string;
+    ghlContactId: string;
+    ticketId: string;
+    reopenedBy: 'admin' | 'client';
+}): Promise<boolean> {
+    const webhookUrl = process.env.GHL_WEBHOOK_TICKET_RE_OPENED;
+
+    const payload: GHLTicketReopenedPayload = {
+        event: 'ticket_reopened',
+        timestamp: new Date().toISOString(),
+        data: {
+            clientId: params.clientId,
+            ghlContactId: params.ghlContactId,
+            ticketId: params.ticketId,
+            reopenedAt: new Date().toISOString(),
+            reopenedBy: params.reopenedBy,
         },
     };
 

@@ -110,7 +110,8 @@ export type GHLEventType =
   | 'ticket_created'
   | 'ticket_replied_by_client'
   | 'ticket_replied_by_admin'
-  | 'ticket_closed';
+  | 'ticket_closed'
+  | 'ticket_reopened';
 
 /**
  * Payload base per webhook GHL
@@ -163,8 +164,22 @@ export interface GHLTicketClosedPayload extends GHLWebhookPayload {
   event: 'ticket_closed';
   data: {
     clientId: string;
-    ghlContactId: string;
+    ghlContactId?: string;
     ticketId: string;
     closedAt: string;
+  };
+}
+
+/**
+ * Payload per evento ticket_reopened
+ */
+export interface GHLTicketReopenedPayload extends GHLWebhookPayload {
+  event: 'ticket_reopened';
+  data: {
+    clientId: string;
+    ghlContactId: string;
+    ticketId: string;
+    reopenedAt: string;
+    reopenedBy: 'admin' | 'client';
   };
 }
