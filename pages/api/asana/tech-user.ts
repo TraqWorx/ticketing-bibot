@@ -1,5 +1,5 @@
 /**
- * API ENDPOINT: /api/asana/current-user
+ * API ENDPOINT: /api/asana/tech-user
  *
  * Ottiene le informazioni dell'utente Asana corrente (account tecnico)
  *
@@ -9,8 +9,9 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getCurrentAsanaUser } from '@/lib/asana/asanaService';
+import { withAuth } from '@/lib/auth-middleware';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
   // Solo GET
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -30,4 +31,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: error.message || 'Errore durante il recupero dell\'utente corrente',
     });
   }
-}
+});

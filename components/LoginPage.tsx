@@ -12,22 +12,23 @@
  * Pattern: Presentational + Firebase Auth
  */
 
-import { useState, FormEvent, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import {
-  Box,
-  VStack,
-  Heading,
-  Input,
-  Button,
-  Text,
-  Center,
-  IconButton,
-} from '@chakra-ui/react';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import { Modal } from '@/components/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
+import {
+  Box,
+  Button,
+  Center,
+  IconButton,
+  Input,
+  Link,
+  Text,
+  VStack
+} from '@chakra-ui/react';
+import { useRouter } from 'next/router';
+import { FormEvent, useEffect, useState } from 'react';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
 export const LoginPage = () => {
   const router = useRouter();
@@ -38,6 +39,11 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Forgot password modal
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
 
   // Fade-in animation per evitare glitch
   useEffect(() => {
@@ -67,6 +73,44 @@ export const LoginPage = () => {
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!forgotEmail) {
+      toast.error('Inserisci l\'email');
+      return;
+    }
+
+    setIsForgotLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.message || 'Errore durante l\'invio dell\'email di recupero password');
+        return;
+      }
+
+      toast.success('Email per il recupero password inviata. Controlla la tua casella di posta.');
+      setIsForgotModalOpen(false);
+      setForgotEmail('');
+
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      toast.error('Errore di connessione. Riprova più tardi.');
+    } finally {
+      setIsForgotLoading(false);
     }
   };
 
@@ -147,10 +191,59 @@ export const LoginPage = () => {
               >
                 {isLoading ? 'Accesso in corso...' : 'Accedi'}
               </Button>
+
+              {/* Forgot Password Link */}
+              <Text textAlign="center" fontSize="sm">
+                <Link 
+                  color="blue.500" 
+                  onClick={() => setIsForgotModalOpen(true)}
+                  cursor="pointer"
+                >
+                  Password dimenticata?
+                </Link>
+              </Text>
             </VStack>
           </form>
         </VStack>
       </Box>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        isOpen={isForgotModalOpen}
+        onClose={() => setIsForgotModalOpen(false)}
+        title="Recupera Password"
+      >
+        <VStack gap={4} align="stretch">
+          <Text>
+            Inserisci la tua email e ti invieremo un link per reimpostare la password.
+          </Text>
+          <form onSubmit={handleForgotPassword}>
+            <VStack gap={4}>
+              <Box w="full">
+                <Text fontSize="sm" fontWeight="medium" mb={1}>Email</Text>
+                <Input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="tua@email.com"
+                  size="lg"
+                />
+              </Box>
+              <Button
+                type="submit"
+                bg="black"
+                color="white"
+                _hover={{ bg: 'gray.800' }}
+                size="lg"
+                w="full"
+                disabled={isForgotLoading}
+              >
+                {isForgotLoading ? 'Invio in corso...' : 'Recupera Password'}
+              </Button>
+            </VStack>
+          </form>
+        </VStack>
+      </Modal>
     </Center>
   );
 };

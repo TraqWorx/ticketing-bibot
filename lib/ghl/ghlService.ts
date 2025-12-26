@@ -336,8 +336,6 @@ export async function sendTicketCreatedEvent(params: {
         },
     };
 
-    console.log('Sending Ticket Created Event to GHL:', payload);
-
     sendWebhookToUrl(sendClientMsgWebhookUrl || '', payload);
     sendWebhookToUrl(sendAdminMsgWebhookUrl || '', payload);
 
@@ -498,6 +496,43 @@ export async function sendPasswordResetEvent(params: {
 
     const payload = {
         event: 'password_reset_requested',
+        timestamp: new Date().toISOString(),
+        data: {
+            clientId: params.clientId,
+            ghlContactId: params.ghlContactId,
+            email: params.email,
+            firstName: params.firstName,
+            lastName: params.lastName,
+            resetLink: params.resetLink,
+            requestedAt: new Date().toISOString(),
+        },
+    };
+
+    return sendWebhookToUrl(webhookUrl || '', payload);
+}
+
+/**
+ * Invia evento: Richiesta reset password per utente esistente (forgot password)
+ *
+ * Webhook URL: GHL_WEBHOOK_PASSWORD_FORGOT
+ *
+ * GHL Workflow può:
+ * - Inviare email brandizzata con link di reset
+ * - Creare attività follow-up
+ * - Aggiornare stato contatto
+ */
+export async function sendPasswordForgotEvent(params: {
+    clientId: string;
+    ghlContactId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    resetLink: string;
+}): Promise<boolean> {
+    const webhookUrl = process.env.GHL_WEBHOOK_PASSWORD_FORGOT;
+
+    const payload = {
+        event: 'password_forgot_requested',
         timestamp: new Date().toISOString(),
         data: {
             clientId: params.clientId,

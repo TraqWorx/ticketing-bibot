@@ -11,35 +11,36 @@
  * - Timeline commenti
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/router';
+import { AsanaTaskDetail } from '@/types';
+import axios from '@/utils/axios';
 import {
-    Box,
-    VStack,
-    HStack,
-    Text,
     Badge,
-    Flex,
-    Icon,
+    Box,
     Button,
-    Textarea,
-    Spinner,
-    IconButton,
     Container,
+    Flex,
+    HStack,
+    Icon,
+    IconButton,
+    Spinner,
+    Text,
+    Textarea,
+    VStack,
 } from '@chakra-ui/react';
+import { useRouter } from 'next/router';
+import { useEffect, useRef, useState } from 'react';
 import {
     FiArrowLeft,
-    FiMessageSquare,
-    FiRefreshCw,
-    FiPaperclip,
-    FiX,
+    FiCalendar,
     FiChevronRight,
     FiClock,
+    FiMessageSquare,
     FiMic,
+    FiPaperclip,
+    FiRefreshCw,
     FiSend,
-    FiCalendar,
+    FiX,
 } from 'react-icons/fi';
-import { AsanaTaskDetail } from '@/types';
 import { toast } from 'react-toastify';
 import { formatDueDate } from '../hooks/useTickets';
 
@@ -126,7 +127,6 @@ export default function TicketDetailPage() {
             loadTaskDetail();
             loadComments();
             loadCurrentAsanaUser();
-            loadFirestoreData();
         }
     }, [id]);
 
@@ -140,28 +140,11 @@ export default function TicketDetailPage() {
         }
     }, [taskDetail]);
 
-    // Auto scroll to bottom SOLO quando vengono aggiunti nuovi commenti (non al primo caricamento)
-    // DISABILITATO per evitare glitch di scroll
-    // useEffect(() => {
-    //     if (comments.length > 0) {
-    //         if (isInitialLoadRef.current) {
-    //             // Primo caricamento: non fare scroll
-    //             isInitialLoadRef.current = false;
-    //         } else {
-    //             // Nuovi commenti aggiunti: fai scroll
-    //             commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    //         }
-    //     }
-    // }, [comments]);
-
     const loadTaskDetail = async () => {
         try {
             setLoadingDetail(true);
-            const axios = require('axios');
             const response = await axios.get(`/api/asana/task-detail?taskGid=${id}`);
             setTaskDetail(response.data.data);
-            // Carica dati Firestore dopo aver caricato il task detail
-            await loadFirestoreData();
         } catch (error) {
             console.error('Errore caricamento dettaglio task:', error);
             toast.error('Errore nel caricamento del ticket');
@@ -173,7 +156,6 @@ export default function TicketDetailPage() {
     const loadComments = async () => {
         try {
             setLoadingComments(true);
-            const axios = require('axios');
             const response = await axios.get(`/api/asana/task-stories?taskGid=${id}`);
             const commentStories = (response.data.data || []).filter((story: AsanaStory) => story.type === 'comment');
             setComments(commentStories);
@@ -186,37 +168,11 @@ export default function TicketDetailPage() {
 
     const loadCurrentAsanaUser = async () => {
         try {
-            const axios = require('axios');
-            const response = await axios.get('/api/asana/current-user');
+            const response = await axios.get('/api/asana/tech-user');
             setCurrentAsanaUser(response.data);
         } catch (error) {
             console.error('Errore caricamento utente Asana corrente:', error);
             setCurrentAsanaUser(null);
-        }
-    };
-
-    const loadFirestoreData = async () => {
-        try {
-            setLoadingFirestore(true);
-            const axios = require('axios');
-            // Estrai clientId dai custom fields del task
-            if (taskDetail) {
-                const clientId = getClientIdFromAsana(taskDetail);
-                if (clientId) {
-                    // Recupera tutti i ticket Firestore dell'utente e filtra quello giusto
-                    const response = await axios.get(`/api/firestore/tickets?userId=${clientId}`);
-                    const allTickets = response.data || {};
-                    setFirestoreData(allTickets[id as string] || null);
-                } else {
-                    setFirestoreData(null);
-                }
-            } else {
-                setFirestoreData(null);
-            }
-        } catch (error) {
-            setFirestoreData(null);
-        } finally {
-            setLoadingFirestore(false);
         }
     };
 
@@ -361,7 +317,6 @@ export default function TicketDetailPage() {
             formData.append('text', `🎤 Nota vocale: ${audioFileName}`);
             formData.append('attachments', audioFile);
 
-            const axios = require('axios');
             const response = await axios.post('/api/asana/create-story', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -401,7 +356,6 @@ export default function TicketDetailPage() {
                 formData.append('attachments', file);
             });
 
-            const axios = require('axios');
             const response = await axios.post('/api/asana/create-story', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -419,7 +373,7 @@ export default function TicketDetailPage() {
 
             setNewComment('');
             setAttachments([]);
-            await Promise.all([loadComments(), loadTaskDetail(), loadFirestoreData()]);
+            await Promise.all([loadComments(), loadTaskDetail()]);
         } catch (error: any) {
             console.error('Error adding comment:', error);
             const errorMessage = error.response?.data?.message

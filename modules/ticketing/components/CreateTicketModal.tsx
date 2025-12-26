@@ -29,6 +29,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Modal } from '@/components/Modal';
 import { Ticket, TicketStatus } from '../types';
 import { TicketPriority } from '../../../types/ticket';
+import axios from '@/utils/axios';
 
 interface AxiosError {
   response?: {
@@ -130,7 +131,6 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
       });
 
       // Chiamata API per creare task su Asana
-      const axios = require('axios');
       try {
         const response = await axios.post('/api/asana/create-task', formDataToSend, {
           headers: {

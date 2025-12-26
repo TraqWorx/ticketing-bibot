@@ -21,6 +21,7 @@
 
 import { User, CreateUserInput } from '@/types/user';
 import { auth } from '@/config/firebase';
+import axios from '@/utils/axios';
 
 /**
  * Helper: Get Firebase ID Token per autenticazione API
@@ -41,8 +42,6 @@ export const createClientUser = async (input: CreateUserInput): Promise<{ user: 
   if (!token) {
     throw new Error('Autenticazione richiesta');
   }
-
-  const axios = require('axios');
   
   try {
     const response = await axios.post('/api/users/create', input, {
@@ -96,7 +95,6 @@ export const getClientUsers = async (params?: {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.search) queryParams.append('search', params.search);
 
-    const axios = require('axios');
     const response = await axios.get(`/api/users/list?${queryParams.toString()}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -134,7 +132,6 @@ export const updateUser = async (userId: string, data: { firstName: string; last
       throw new Error('Autenticazione richiesta');
     }
 
-    const axios = require('axios');
     const response = await axios.put('/api/users/update', 
       { userId, ...data },
       {
@@ -167,7 +164,6 @@ export const deleteUser = async (userId: string): Promise<void> => {
       throw new Error('Autenticazione richiesta');
     }
 
-    const axios = require('axios');
     await axios.delete('/api/users/delete', {
       headers: {
         'Authorization': `Bearer ${token}`,

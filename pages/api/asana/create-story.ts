@@ -17,6 +17,7 @@
  */
 
 import { createTaskStory, uploadAsanaAttachment } from '@/lib/asana/asanaService';
+import { withAuth } from '@/lib/auth-middleware';
 import { sendTicketRepliedByClientEvent } from '@/lib/ghl/ghlService';
 import { transcribeAudioWithWhisper } from '@/lib/openaiWhisper';
 import { getTicket, updateTicketOnReply } from '@/lib/ticket/ticketService';
@@ -31,7 +32,7 @@ export const config = {
   },
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
   // Solo POST
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -106,7 +107,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
             audioSummaries.push(summary);
           }
-          await fs.unlink(file.filepath).catch(() => {});
+          await fs.unlink(file.filepath).catch(() => { });
         } catch (uploadError: any) {
           console.error(`[create-story] Errore upload allegato ${file.originalFilename}:`, uploadError.message);
         }
@@ -118,12 +119,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (audioSummaries.length > 0) {
       commentText = audioSummaries.join('\n\n');
     }
-    
+
     // Aggiungi l'elenco degli allegati al messaggio se presenti
     if (attachmentNames.length > 0) {
       commentText += '\n\n📎 Allegati:\n' + attachmentNames.map(name => `• ${name}`).join('\n');
     }
-    
+
     // Commento creato per risposta del cliente
     const result = await createTaskStory(taskGid, commentText, true);
 
@@ -164,7 +165,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       attachmentErrors: totalAttachments - attachmentsUploaded,
       firestoreUpdated,
       webhookSent,
-      message: attachmentsUploaded > 0 
+      message: attachmentsUploaded > 0
         ? `Commento aggiunto con ${attachmentsUploaded} allegato/i`
         : 'Commento aggiunto con successo',
     });
@@ -175,4 +176,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: error.message || 'Errore durante la creazione del commento',
     });
   }
-}
+});

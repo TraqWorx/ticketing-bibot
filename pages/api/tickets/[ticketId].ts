@@ -1,9 +1,8 @@
-import type { NextApiResponse } from 'next';
 import { withAuth } from '@/lib/auth-middleware';
 import { getTicket } from '@/lib/ticket/ticketService';
+import { NextApiRequest, NextApiResponse } from 'next';
 
-// API: /api/firestore/tickets/[ticketId]
-export default withAuth(async (req, res) => {
+export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
   const {
     query: { ticketId },
     method,

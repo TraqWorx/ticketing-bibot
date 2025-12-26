@@ -59,7 +59,6 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-
   // Gestione handshake Asana (prima chiamata per verificare webhook)
   const hookSecret = req.headers['x-hook-secret'];
   if (hookSecret) {
