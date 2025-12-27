@@ -425,3 +425,34 @@ export async function getStory(storyGid: string): Promise<any> {
         throw new Error(error.message || 'Errore durante il recupero della story');
     }
 }
+
+/**
+ * Aggiorna un task su Asana
+ */
+export async function updateAsanaTask(taskGid: string, updates: { completed?: boolean; name?: string; notes?: string }): Promise<any> {
+    if (!process.env.ASANA_API_BASE_URL) {
+        throw new Error('ASANA_API_BASE_URL non configurato nel .env');
+    }
+    if (!process.env.ASANA_ACCESS_TOKEN) {
+        throw new Error('ASANA_ACCESS_TOKEN non configurato nel .env');
+    }
+
+    try {
+        const axios = require('axios');
+        const response = await axios.put(
+            `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}`,
+            { data: updates },
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error: any) {
+        console.error('Errore aggiornamento task:', error);
+        throw new Error(error.message || 'Errore durante l\'aggiornamento del task');
+    }
+}

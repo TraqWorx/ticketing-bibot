@@ -342,7 +342,7 @@ async function handleTaskMarkedIncomplete(event: any): Promise<void> {
       return;
     }
 
-    // Riapri il ticket su Firestore (riaperto dall'admin)
+    // Riapri il ticket su Firestore (riaperto)
     await reopenTicket(taskGid, 'admin');
 
     // Invia notifica a GHL

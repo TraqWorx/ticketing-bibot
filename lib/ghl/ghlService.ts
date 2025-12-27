@@ -456,7 +456,8 @@ export async function sendTicketReopenedEvent(params: {
     ticketId: string;
     reopenedBy: 'admin' | 'client';
 }): Promise<boolean> {
-    const webhookUrl = process.env.GHL_WEBHOOK_TICKET_RE_OPENED;
+    const ticketReopenedSendClientMsgWebhookUrl = process.env.GHL_WEBHOOK_TICKET_RE_OPENED_SEND_CLIENT_MSG;
+    const ticketReopenedSendAdminMsgWebhookUrl = process.env.GHL_WEBHOOK_TICKET_RE_OPENED_SEND_ADMIN_MSG;
 
     const payload: GHLTicketReopenedPayload = {
         event: 'ticket_reopened',
@@ -471,7 +472,9 @@ export async function sendTicketReopenedEvent(params: {
         },
     };
 
-    return sendWebhookToUrl(webhookUrl || '', payload);
+    sendWebhookToUrl(ticketReopenedSendClientMsgWebhookUrl || '', payload);
+    return sendWebhookToUrl(ticketReopenedSendAdminMsgWebhookUrl || '', payload);
+
 }
 
 /**

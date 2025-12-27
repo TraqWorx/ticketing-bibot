@@ -13,6 +13,7 @@
 
 import { AsanaTaskDetail } from '@/types';
 import axios from '@/utils/axios';
+import { sendTicketReopenedEvent } from '@/lib/ghl/ghlService';
 import {
     Badge,
     Box,
@@ -127,6 +128,7 @@ export default function TicketDetailPage() {
             loadTaskDetail();
             loadComments();
             loadCurrentAsanaUser();
+            loadFirestoreData();
         }
     }, [id]);
 
@@ -173,6 +175,19 @@ export default function TicketDetailPage() {
         } catch (error) {
             console.error('Errore caricamento utente Asana corrente:', error);
             setCurrentAsanaUser(null);
+        }
+    };
+
+    const loadFirestoreData = async () => {
+        try {
+            setLoadingFirestore(true);
+            const response = await axios.get(`/api/tickets/${id}`);
+            setFirestoreData(response.data);
+        } catch (error) {
+            console.error('Errore caricamento dati Firestore:', error);
+            setFirestoreData(null);
+        } finally {
+            setLoadingFirestore(false);
         }
     };
 
@@ -244,7 +259,7 @@ export default function TicketDetailPage() {
                 toast.error('La registrazione vocale richiede un contesto sicuro (HTTPS)');
                 return;
             }
-            
+
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
                 toast.error('Registrazione vocale non supportata su questo dispositivo/browser');
                 return;
@@ -385,6 +400,49 @@ export default function TicketDetailPage() {
         }
     };
 
+    const handleReopenTicket = async () => {
+        try {
+            const response = await axios.put('/api/asana/update-task', {
+                taskGid: id as string,
+                updates: { completed: false },
+            });
+
+            if (response.data.success) {
+                toast.success('Ticket riaperto con successo');
+                await loadTaskDetail();
+
+                // Invia evento a GHL per workflow di riapertura
+                const clientId = taskDetail ? getClientIdFromAsana(taskDetail) : null;
+                
+                if (clientId && firestoreData?.ghlContactId) {
+                    try {
+                        await sendTicketReopenedEvent({
+                            clientId,
+                            ghlContactId: firestoreData.ghlContactId,
+                            ticketId: id as string,
+                            reopenedBy: 'admin',
+                        });
+                    } catch (ghlError) {
+                        console.error('Errore invio evento GHL riapertura ticket:', ghlError);
+                        // Non bloccare il flusso se GHL fallisce
+                    }
+                } else {
+                    console.warn('Impossibile inviare evento GHL: dati mancanti', {
+                        hasClientId: !!clientId,
+                        hasFirestoreData: !!firestoreData,
+                        hasGhlContactId: !!firestoreData?.ghlContactId
+                    });
+                }
+            } else {
+                // Caso in cui il backend ritorna success: false
+                toast.error(response.data.message || 'Errore durante la riapertura del ticket');
+            }
+        } catch (error: any) {
+            console.error('Errore riapertura ticket:', error);
+            toast.error(`Errore durante la riapertura del ticket`);
+        }
+    };
+
     if (loadingDetail) {
         return (
             <Flex justify="center" align="center" minH="100vh" bg="gray.50">
@@ -463,6 +521,21 @@ export default function TicketDetailPage() {
                                     >
                                         {taskDetail.completed ? 'Completato' : 'Non Completato'}
                                     </Badge>
+                                    {taskDetail.completed && (
+                                        <Button
+                                            size="xs"
+                                            colorScheme="blue"
+                                            variant="outline"
+                                            onClick={handleReopenTicket}
+                                            borderRadius="full"
+                                            fontSize="xs"
+                                            fontWeight="600"
+                                            _hover={{ bg: 'blue.50' }}
+                                        >
+                                            <Icon as={FiRefreshCw} mr={1} />
+                                            Riapri ticket
+                                        </Button>
+                                    )}
                                 </HStack>
                                 <HStack gap={2}>
                                     <Text fontSize="xs" color="gray.500" fontWeight="500">
@@ -689,18 +762,18 @@ export default function TicketDetailPage() {
                                                     {(() => {
                                                         // Prima cerca il nome del cliente da Firestore (nome webapp)
                                                         let displayName = firestoreData?.clientName;
-                                                        
+
                                                         // Se non trovato in Firestore, cerca nei custom fields Asana
                                                         if (!displayName) {
                                                             const clientNameField = taskDetail.custom_fields?.find(
                                                                 (cf: any) => cf.name?.toLowerCase() === 'nome cliente' ||
-                                                                           cf.name?.toLowerCase() === 'client_name' ||
-                                                                           cf.name?.toLowerCase() === 'cliente' ||
-                                                                           cf.name?.toLowerCase() === 'task_creator_name'
+                                                                    cf.name?.toLowerCase() === 'client_name' ||
+                                                                    cf.name?.toLowerCase() === 'cliente' ||
+                                                                    cf.name?.toLowerCase() === 'task_creator_name'
                                                             );
                                                             displayName = clientNameField?.display_value;
                                                         }
-                                                        
+
                                                         // Se è un commento tecnico, mostra il nome del cliente
                                                         if (currentAsanaUser && comment.created_by.gid === currentAsanaUser.gid) {
                                                             if (displayName) {
@@ -709,7 +782,7 @@ export default function TicketDetailPage() {
                                                             // Fallback: nome dell'utente tecnico
                                                             return currentAsanaUser.name || 'Supporto';
                                                         }
-                                                        
+
                                                         // Per commenti di altre persone, mostra il nome originale
                                                         return comment.created_by.name;
                                                     })()}
