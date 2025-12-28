@@ -106,7 +106,7 @@ export const useTickets = () => {
 export const formatDueDate = (dueDate?: Date): { text: string; colorScheme: string } => {
   if (!dueDate) {
     return {
-      text: 'Data consegna non ancora definita',
+      text: 'Data consegna da definire',
       colorScheme: 'gray'
     };
   }

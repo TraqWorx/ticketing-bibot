@@ -102,7 +102,7 @@ export const LoginPage = () => {
         return;
       }
 
-      toast.success('Email per il recupero password inviata. Controlla la tua casella di posta.');
+      toast.success('Email di recupero password inviata. Controlla la tua casella di posta.');
       setIsForgotModalOpen(false);
       setForgotEmail('');
 

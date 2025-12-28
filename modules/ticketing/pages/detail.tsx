@@ -27,6 +27,7 @@ import {
     Text,
     Textarea,
     VStack,
+    useBreakpointValue,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
@@ -94,6 +95,7 @@ interface AsanaStory {
 export default function TicketDetailPage() {
     const router = useRouter();
     const { id } = router.query;
+    const isMobile = useBreakpointValue({ base: true, md: false });
 
     const [newComment, setNewComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,7 +129,6 @@ export default function TicketDetailPage() {
         if (id) {
             loadTaskDetail();
             loadComments();
-            loadCurrentAsanaUser();
             loadFirestoreData();
         }
     }, [id]);
@@ -161,6 +162,11 @@ export default function TicketDetailPage() {
             const response = await axios.get(`/api/asana/task-stories?taskGid=${id}`);
             const commentStories = (response.data.data || []).filter((story: AsanaStory) => story.type === 'comment');
             setComments(commentStories);
+
+            // Carica l'utente tecnico solo se ci sono commenti
+            if (commentStories.length > 0) {
+                loadCurrentAsanaUser();
+            }
         } catch (error) {
             console.error('Errore caricamento commenti:', error);
         } finally {
@@ -495,18 +501,59 @@ export default function TicketDetailPage() {
                     >
                         <VStack align="stretch" gap={4}>
                             {/* Navigation + Header in un'unica riga */}
-                            <HStack justify="space-between" align="start">
-                                <HStack gap={2}>
-                                    {/* Bottone Torna indietro sempre visibile, mobile-first */}
+                            <Flex
+                                direction={{ base: 'column', md: 'row' }}
+                                gap={{ base: 3, md: 0 }}
+                                justify={{ md: 'space-between' }}
+                                align={{ md: 'start' }}
+                            >
+                                {/* Su mobile: prima riga con freccia e aggiorna */}
+                                <Flex
+                                    justify="space-between"
+                                    align="center"
+                                    display={{ base: 'flex', md: 'none' }}
+                                >
                                     <IconButton
                                         aria-label="Torna indietro"
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => router.back()}
                                         borderRadius="full"
-                                        display={{ base: 'flex' }}
-                                        ml={{ base: '-8px', lg: '0' }}
-                                        mt={{ base: '-8px', lg: '0' }}
+                                        ml={{ base: '-8px' }}
+                                        mt={{ base: '-8px' }}
+                                    >
+                                        <FiArrowLeft />
+                                    </IconButton>
+                                    <HStack gap={1} align="center">
+                                        <Text fontSize="xs" color="gray.500" fontWeight="500">
+                                            #{taskDetail.gid}
+                                        </Text>
+                                        <IconButton
+                                            aria-label="Aggiorna"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                loadTaskDetail();
+                                                loadComments();
+                                            }}
+                                            loading={loadingComments}
+                                            borderRadius="full"
+                                        >
+                                            <FiRefreshCw />
+                                        </IconButton>
+                                    </HStack>
+                                </Flex>
+
+                                {/* Badge e pulsante riapri */}
+                                <HStack gap={2} align="center">
+                                    {/* Bottone Torna indietro visibile solo su desktop */}
+                                    <IconButton
+                                        aria-label="Torna indietro"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => router.back()}
+                                        borderRadius="full"
+                                        display={{ base: 'none', md: 'flex' }}
                                     >
                                         <FiArrowLeft />
                                     </IconButton>
@@ -518,6 +565,9 @@ export default function TicketDetailPage() {
                                         borderRadius="full"
                                         fontSize="xs"
                                         fontWeight="600"
+                                        h="24px"
+                                        display="flex"
+                                        alignItems="center"
                                     >
                                         {taskDetail.completed ? 'Completato' : 'Non Completato'}
                                     </Badge>
@@ -531,13 +581,16 @@ export default function TicketDetailPage() {
                                             fontSize="xs"
                                             fontWeight="600"
                                             _hover={{ bg: 'blue.50' }}
+                                            h="24px"
                                         >
                                             <Icon as={FiRefreshCw} mr={1} />
                                             Riapri ticket
                                         </Button>
                                     )}
                                 </HStack>
-                                <HStack gap={2}>
+
+                                {/* ID ticket e aggiorna su desktop */}
+                                <HStack gap={2} align="center" display={{ base: 'none', md: 'flex' }}>
                                     <Text fontSize="xs" color="gray.500" fontWeight="500">
                                         #{taskDetail.gid}
                                     </Text>
@@ -555,7 +608,7 @@ export default function TicketDetailPage() {
                                         <FiRefreshCw />
                                     </IconButton>
                                 </HStack>
-                            </HStack>
+                            </Flex>
 
                             {/* Titolo ticket */}
                             <Text fontSize="xl" fontWeight="700" color="gray.900" lineHeight="1.3">
@@ -569,7 +622,7 @@ export default function TicketDetailPage() {
                                 <Badge
                                     bg={getPriorityBg(getPriorityFromAsana(taskDetail))}
                                     color={getPriorityColor(getPriorityFromAsana(taskDetail))}
-                                    px={3}
+                                    px={{ base: 2, md: 3 }}
                                     py={1}
                                     borderRadius="full"
                                     fontWeight="600"
@@ -586,7 +639,7 @@ export default function TicketDetailPage() {
                                 <Badge
                                     colorScheme={formatDueDate(taskDetail.due_on ? new Date(taskDetail.due_on) : undefined).colorScheme}
                                     fontSize="xs"
-                                    px={3}
+                                    px={{ base: 2, md: 3 }}
                                     py={1}
                                     borderRadius="full"
                                     fontWeight="600"
@@ -633,7 +686,12 @@ export default function TicketDetailPage() {
                                     onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
                                 >
                                     <HStack gap={2}>
-                                        <span>{isDescriptionExpanded ? 'Mostra meno' : 'Mostra tutto'}</span>
+                                        <span>
+                                            {isDescriptionExpanded
+                                                ? (isMobile ? 'Mostra meno' : 'Mostra meno')
+                                                : (isMobile ? 'Mostra tutto' : 'Mostra tutto')
+                                            }
+                                        </span>
                                         <Icon
                                             as={FiChevronRight}
                                             transform={isDescriptionExpanded ? 'rotate(-90deg)' : 'rotate(90deg)'}
@@ -707,7 +765,7 @@ export default function TicketDetailPage() {
                         </HStack>
 
                         <VStack align="stretch" gap={3}>
-                            {loadingComments || !currentAsanaUser ? (
+                            {loadingComments || (comments.length > 0 && !currentAsanaUser) ? (
                                 <Flex justify="center" py={8}>
                                     <Spinner size="md" color="gray.400" />
                                 </Flex>

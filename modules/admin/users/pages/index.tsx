@@ -153,7 +153,7 @@ export default function UsersManagementPage() {
 
     try {
       await deleteUser(deleteConfirm.userId);
-      toast.success('Cliente eliminato definitivamente');
+      toast.success('Cliente eliminato con successo');
       await loadUsers();
     } catch (error: any) {
       toast.error(error.message || 'Errore durante l\'eliminazione');
