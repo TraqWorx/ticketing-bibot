@@ -46,6 +46,10 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // Show login page if not authenticated
   if (!user) {
+    // Save current URL for redirect after login
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('redirectAfterLogin', router.asPath);
+    }
     return <LoginPage />;
   }
 

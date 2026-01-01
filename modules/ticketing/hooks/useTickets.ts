@@ -145,7 +145,7 @@ export const formatDueDate = (dueDate?: Date): { text: string; colorScheme: stri
     };
   } else {
     return {
-      text: `Consegna il ${formattedDate}`,
+      text: `Consegna prevista il ${formattedDate}`,
       colorScheme: 'gray'
     };
   }

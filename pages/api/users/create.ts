@@ -80,10 +80,10 @@ async function handler(
 
     // 0. Cerca o crea contatto su Go High Level
     let ghlContactId = '';
-    
+
     // Cerca contatto esistente solo per email
     let ghlContact = await searchGHLContact(email);
-    
+
     if (ghlContact) {
       // Contatto trovato, usa il suo ID
       ghlContactId = ghlContact.id;
@@ -128,14 +128,8 @@ async function handler(
     // 5. Genera link reset password e invia webhook a GHL per email custom
     await sendPasswordResetWebhook(userData);
 
-    // TODO: 6. Trigger onboarding GoHighLevel
-    // await triggerGhlOnboarding(userData);
-
     // Messaggio di successo personalizzato
-    let message = 'Cliente creato. Email inviata per impostare la password.';
-    if (ghlContact.existingContact) {
-      message = `Cliente creato con contatto Go High Level esistente. Email inviata per impostare la password.`;
-    }
+    let message = 'Cliente creato. Email e messaggio WhatsApp inviati per impostare la password.';
 
     return res.status(201).json({
       success: true,
@@ -147,7 +141,7 @@ async function handler(
 
     // Gestione errori Go High Level
     if (error.message && error.message.includes('Go High Level')) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: error.message
       });
     }

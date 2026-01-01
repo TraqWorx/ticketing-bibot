@@ -98,9 +98,9 @@ export default function UsersManagementPage() {
   // Handle creazione utente
   const handleCreateUser = async (data: CreateUserInput) => {
     try {
-      const { user, message } = await createClientUser(data);
+      const { message } = await createClientUser(data);
       toast.success(
-        `${message}\nEmail: ${user.email}`,
+        `${message}`,
         { autoClose: 8000 }
       );
       setIsModalOpen(false);

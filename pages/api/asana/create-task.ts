@@ -153,13 +153,16 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
     // STEP 5: Invia webhook evento a GHL per automazioni
     let webhookSent = false;
     if (ghlContactId) {
+      const [firstName, ...lastNameParts] = creatorName.split(' ');
+      const lastName = lastNameParts.join(' ');
       webhookSent = await sendTicketCreatedEvent({
         clientId: creatorId,
         ghlContactId,
         ticketId: taskGid,
         title,
         priority,
-        clientName: creatorName,
+        firstName,
+        lastName,
         clientPhone: creatorPhone,
       });
     }

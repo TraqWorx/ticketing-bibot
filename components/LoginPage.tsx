@@ -64,8 +64,14 @@ export const LoginPage = () => {
 
     try {
       await signIn(email, password);
-      // Redirect esplicito alla homepage
-      router.push('/');
+      // Check for redirect URL after login
+      const redirectUrl = typeof window !== 'undefined' ? localStorage.getItem('redirectAfterLogin') : null;
+      if (redirectUrl) {
+        localStorage.removeItem('redirectAfterLogin');
+        router.push(redirectUrl);
+      } else {
+        router.push('/');
+      }
     } catch (err: any) {
       // Gestione errore silente - solo toast, no console.error
       const errorCode = err.code || 'unknown';
@@ -102,7 +108,7 @@ export const LoginPage = () => {
         return;
       }
 
-      toast.success('Email di recupero password inviata. Controlla la tua casella di posta.');
+      toast.success('Email e messaggio WhatsApp di recupero password inviati');
       setIsForgotModalOpen(false);
       setForgotEmail('');
 
@@ -147,7 +153,7 @@ export const LoginPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
+                  placeholder="Inserisci la tua email"
                   size="lg"
                 />
               </Box>

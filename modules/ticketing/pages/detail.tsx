@@ -176,8 +176,24 @@ export default function TicketDetailPage() {
 
     const loadCurrentAsanaUser = async () => {
         try {
+            // Controlla prima se l'utente tecnico è già salvato nel localStorage
+            const cachedUser = localStorage.getItem('techUser');
+            if (cachedUser) {
+                try {
+                    setCurrentAsanaUser(JSON.parse(cachedUser));
+                    return;
+                } catch (parseError) {
+                    // Se c'è un errore nel parsing, rimuovi il dato corrotto e procedi con la chiamata API
+                    localStorage.removeItem('techUser');
+                }
+            }
+
+            // Se non c'è in cache, fai la chiamata API
             const response = await axios.get('/api/asana/tech-user');
             setCurrentAsanaUser(response.data);
+            
+            // Salva il risultato nel localStorage per le prossime volte
+            localStorage.setItem('techUser', JSON.stringify(response.data));
         } catch (error) {
             console.error('Errore caricamento utente Asana corrente:', error);
             setCurrentAsanaUser(null);
@@ -936,39 +952,42 @@ export default function TicketDetailPage() {
                                         borderWidth="1px"
                                         borderColor="gray.300"
                                         p={3}
+                                        minW={0}
                                     >
-                                        <HStack gap={3} justify="space-between">
-                                            <HStack gap={2} flex={1}>
-                                                <Icon as={FiMic} boxSize="20px" color="#25D366" />
-                                                <VStack align="flex-start" gap={0} flex={1}>
-                                                    <Text fontSize="sm" fontWeight="600" color="gray.700">
-                                                        Nota vocale
-                                                    </Text>
-                                                    <Text fontSize="xs" color="gray.500">
-                                                        {formatRecordingTime(recordingTime)}
-                                                    </Text>
-                                                </VStack>
-                                                <audio
-                                                    src={URL.createObjectURL(audioBlob)}
-                                                    controls
-                                                    style={{
-                                                        height: '32px',
-                                                        flex: 1,
-                                                        maxWidth: '200px'
-                                                    }}
-                                                />
+                                        <VStack gap={2} align="stretch">
+                                            <HStack gap={2} justify="space-between">
+                                                <HStack gap={2} flex={1} minW={0}>
+                                                    <Icon as={FiMic} boxSize="16px" color="#25D366" flexShrink={0} />
+                                                    <VStack align="flex-start" gap={0} flex={1} minW={0}>
+                                                        <Text fontSize="sm" fontWeight="600" color="gray.700">
+                                                            Nota vocale
+                                                        </Text>
+                                                        <Text fontSize="xs" color="gray.500">
+                                                            {formatRecordingTime(recordingTime)}
+                                                        </Text>
+                                                    </VStack>
+                                                </HStack>
+                                                <IconButton
+                                                    aria-label="Elimina audio"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={cancelRecording}
+                                                    borderRadius="full"
+                                                    color="red.500"
+                                                    flexShrink={0}
+                                                >
+                                                    <FiX />
+                                                </IconButton>
                                             </HStack>
-                                            <IconButton
-                                                aria-label="Elimina audio"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={cancelRecording}
-                                                borderRadius="full"
-                                                color="red.500"
-                                            >
-                                                <FiX />
-                                            </IconButton>
-                                        </HStack>
+                                            <audio
+                                                src={URL.createObjectURL(audioBlob)}
+                                                controls
+                                                style={{
+                                                    height: '32px',
+                                                    width: '100%'
+                                                }}
+                                            />
+                                        </VStack>
                                     </Box>
                                     <IconButton
                                         aria-label="Invia nota vocale"
@@ -982,6 +1001,7 @@ export default function TicketDetailPage() {
                                         disabled={isSubmitting}
                                         borderRadius="full"
                                         flexShrink={0}
+                                        minW="48px"
                                     >
                                         <Icon as={FiSend} boxSize="20px" />
                                     </IconButton>
@@ -1076,7 +1096,7 @@ export default function TicketDetailPage() {
                                         resize="none"
                                         minH="44px"
                                         maxH="120px"
-                                        fontSize="sm"
+                                        fontSize="16px"
                                         disabled={taskDetail.completed}
                                         flex={1}
                                         py={3}

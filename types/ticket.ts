@@ -134,7 +134,8 @@ export interface GHLTicketCreatedPayload extends GHLWebhookPayload {
     ticketUrl?: string;
     title: string;
     priority: string;
-    clientName: string;
+    firstName: string;
+    lastName: string;
     clientPhone: string;
     openedAt: string;
   };

@@ -447,7 +447,8 @@ async function handleTaskCreated(event: any): Promise<void> {
         ticketId: taskGid,
         title: taskData.name,
         priority,
-        clientName,
+        firstName: client.firstName,
+        lastName: client.lastName,
         clientPhone,
       });
     }
@@ -544,7 +545,8 @@ async function handleTaskCustomFieldsChanged(event: any): Promise<void> {
         ticketId: taskGid,
         title: taskData.name,
         priority,
-        clientName,
+        firstName: client.firstName,
+        lastName: client.lastName,
         clientPhone,
       });
     }

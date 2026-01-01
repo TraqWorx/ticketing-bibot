@@ -314,7 +314,8 @@ export async function sendTicketCreatedEvent(params: {
     ticketId: string;
     title: string;
     priority: string;
-    clientName: string;
+    firstName: string;
+    lastName: string;
     clientPhone: string;
 }): Promise<boolean> {
     const sendClientMsgWebhookUrl = process.env.GHL_WEBHOOK_TICKET_CREATED_SEND_CLIENT_MSG;
@@ -330,7 +331,8 @@ export async function sendTicketCreatedEvent(params: {
             ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
             title: params.title,
             priority: params.priority,
-            clientName: params.clientName,
+            firstName: params.firstName,
+            lastName: params.lastName,
             clientPhone: params.clientPhone,
             openedAt: new Date().toISOString(),
         },

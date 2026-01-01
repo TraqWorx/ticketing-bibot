@@ -472,7 +472,6 @@ export default function TicketingPage() {
             onClick={handleCreateTicket}
           >
             <HStack gap={1}>
-              <Icon as={FiPlus} />
               <span>Nuovo Ticket</span>
             </HStack>
           </Button>
