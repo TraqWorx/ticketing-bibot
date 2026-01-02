@@ -42,6 +42,10 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
     const form = new IncomingForm({
       multiples: true,
       keepExtensions: true,
+      maxFileSize: 50 * 1024 * 1024, // 50MB per file
+      maxTotalFileSize: 100 * 1024 * 1024, // 100MB totali
+      maxFields: 1000,
+      maxFieldsSize: 10 * 1024 * 1024, // 10MB per i campi di testo
     });
 
     const { fields, files } = await new Promise<{ fields: any; files: any }>((resolve, reject) => {
