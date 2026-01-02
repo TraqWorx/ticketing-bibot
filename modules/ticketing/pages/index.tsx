@@ -91,7 +91,7 @@ export default function TicketingPage() {
     // Filtro per status basato sulle sezioni Asana
     const isOpen = ticket.status === TicketStatus.OPEN;
     const isInProgress = ticket.status === TicketStatus.IN_PROGRESS;
-    const isCompleted = ticket.status === TicketStatus.CLOSED || ticket.status === TicketStatus.RESOLVED;
+    const isCompleted = ticket.status === TicketStatus.COMPLETED;
 
     const hasAnyStatusFilterActive = statusFilters.open || statusFilters.inProgress || statusFilters.completed;
     const matchesStatus = !hasAnyStatusFilterActive ||
@@ -118,7 +118,7 @@ export default function TicketingPage() {
   });
 
   // Conta quanti filtri sono attivi
-  const activeFiltersCount = 
+  const activeFiltersCount =
     Object.values(statusFilters).filter(Boolean).length +
     Object.values(priorityFilters).filter(Boolean).length +
     Object.values(waitingFilters).filter(Boolean).length;
@@ -654,6 +654,7 @@ export default function TicketingPage() {
                       display="flex"
                       flexDirection="column"
                       minH="200px"
+                      mb={{ base: 16, md: 0 }}
                     >
                       <HStack mb={3} gap={2}>
                         <Text fontSize="xs" fontWeight="700" color="orange.600" textTransform="uppercase">
@@ -722,95 +723,14 @@ export default function TicketingPage() {
                 })() : null}
 
                 {/* Colonna Completati - visualizzazione normale */}
-                {statusFilters.completed && !statusFilters.open && !statusFilters.inProgress ? (() => {
-                  const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED);
+                {statusFilters.completed ? (() => {
+                  const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.COMPLETED);
                   const totalPages = getTotalPages('completed', completedTickets.length);
                   const currentPage = pagination.completed.currentPage;
                   const startIndex = (currentPage - 1) * itemsPerPage;
                   const endIndex = startIndex + itemsPerPage;
                   const paginatedTickets = completedTickets.slice(startIndex, endIndex);
 
-                  return (
-                    <Box
-                      display="flex"
-                      flexDirection="column"
-                      minH="200px"
-                      gridColumn="1 / -1"
-                    >
-                      <HStack mb={3} gap={2}>
-                        <Text fontSize="xs" fontWeight="700" color="green.600" textTransform="uppercase">
-                          Completati
-                        </Text>
-                        <Badge colorScheme="green" fontSize="xs">
-                          {completedTickets.length}
-                        </Badge>
-                      </HStack>
-                      <VStack align="stretch" gap={2}>
-                        {paginatedTickets.map((ticket, index) => (
-                          <TicketCard
-                            key={ticket.id}
-                            ticket={ticket}
-                            index={startIndex + index}
-                          />
-                        ))}
-                        {completedTickets.length === 0 && (
-                          <Box
-                            p={4}
-                            borderRadius="md"
-                            borderWidth="1px"
-                            borderStyle="dashed"
-                            borderColor="gray.300"
-                            textAlign="center"
-                          >
-                            <Text fontSize="xs" color="gray.400">
-                              Nessun ticket completato
-                            </Text>
-                          </Box>
-                        )}
-                        {totalPages > 1 && (
-                          <HStack justify="center" mt={2} gap={1}>
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              disabled={currentPage === 1}
-                              onClick={() => setPage('completed', currentPage - 1)}
-                            >
-                              <Icon as={FiChevronLeft} />
-                            </Button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                              <Button
-                                key={page}
-                                size="xs"
-                                variant={page === currentPage ? 'solid' : 'ghost'}
-                                colorScheme={page === currentPage ? 'green' : 'gray'}
-                                onClick={() => setPage('completed', page)}
-                              >
-                                {page}
-                              </Button>
-                            ))}
-                            <Button
-                              size="xs"
-                              variant="ghost"
-                              disabled={currentPage === totalPages}
-                              onClick={() => setPage('completed', currentPage + 1)}
-                            >
-                              <Icon as={FiChevronRight} />
-                            </Button>
-                          </HStack>
-                        )}
-                      </VStack>
-                    </Box>
-                  );
-                })() : null}
-
-                {/* Se solo completati è attivo, mostra lista semplice */}
-                {statusFilters.completed && (statusFilters.open || statusFilters.inProgress) ? (() => {
-                  const completedTickets = filteredTickets.filter(t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED);
-                  const totalPages = getTotalPages('completed', completedTickets.length);
-                  const currentPage = pagination.completed.currentPage;
-                  const startIndex = (currentPage - 1) * itemsPerPage;
-                  const endIndex = startIndex + itemsPerPage;
-                  const paginatedTickets = completedTickets.slice(startIndex, endIndex);
                   return (
                     <Box
                       display="flex"

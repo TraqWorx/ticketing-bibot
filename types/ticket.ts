@@ -21,8 +21,7 @@ export type WaitingFor = 'client' | 'admin' | null;
 export enum TicketStatus {
   OPEN = 'open',
   IN_PROGRESS = 'in_progress',
-  RESOLVED = 'resolved',
-  CLOSED = 'closed',
+  COMPLETED = 'completed',
 }
 
 /**
@@ -110,7 +109,7 @@ export type GHLEventType =
   | 'ticket_created'
   | 'ticket_replied_by_client'
   | 'ticket_replied_by_admin'
-  | 'ticket_closed'
+  | 'ticket_completed'
   | 'ticket_reopened';
 
 /**
@@ -161,16 +160,16 @@ export interface GHLTicketRepliedPayload extends GHLWebhookPayload {
 }
 
 /**
- * Payload per evento ticket_closed
+ * Payload per evento ticket_completed
  */
-export interface GHLTicketClosedPayload extends GHLWebhookPayload {
-  event: 'ticket_closed';
+export interface GHLTicketCompletedPayload extends GHLWebhookPayload {
+  event: 'ticket_completed';
   data: {
     clientId: string;
     ghlContactId?: string;
     ticketId: string;
     ticketUrl?: string;
-    closedAt: string;
+    completedAt: string;
   };
 }
 

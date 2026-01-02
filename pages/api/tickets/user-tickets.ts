@@ -77,7 +77,7 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
       if (sectionName.includes('lavorazione') || sectionName.includes('in progress')) {
         status = TicketStatus.IN_PROGRESS;
       } else if (sectionName.includes('completati') || sectionName.includes('completed') || sectionName.includes('done')) {
-        status = TicketStatus.RESOLVED;
+        status = TicketStatus.COMPLETED;
       }
 
       // Dati da Firestore

@@ -125,6 +125,10 @@ export default function TicketDetailPage() {
     const [firestoreData, setFirestoreData] = useState<any>(null);
     const [loadingFirestore, setLoadingFirestore] = useState(false);
 
+    // Stati per gestione errori
+    const [error, setError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string>('');
+
     useEffect(() => {
         if (id) {
             loadTaskDetail();
@@ -146,10 +150,15 @@ export default function TicketDetailPage() {
     const loadTaskDetail = async () => {
         try {
             setLoadingDetail(true);
+            setError(false);
+            setErrorMessage('');
             const response = await axios.get(`/api/asana/task-detail?taskGid=${id}`);
             setTaskDetail(response.data.data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Errore caricamento dettaglio task:', error);
+            const errorMsg = error?.response?.data?.message || error?.message || 'Errore nel caricamento del ticket';
+            setError(true);
+            setErrorMessage(`Errore caricamento ticket: ${errorMsg}`);
             toast.error('Errore nel caricamento del ticket');
         } finally {
             setLoadingDetail(false);
@@ -167,8 +176,10 @@ export default function TicketDetailPage() {
             if (commentStories.length > 0) {
                 loadCurrentAsanaUser();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Errore caricamento commenti:', error);
+            // Non impostare errore globale per commenti - sono secondari
+            toast.error('Errore nel caricamento dei commenti');
         } finally {
             setLoadingComments(false);
         }
@@ -204,13 +215,32 @@ export default function TicketDetailPage() {
         try {
             setLoadingFirestore(true);
             const response = await axios.get(`/api/tickets/${id}`);
-            setFirestoreData(response.data);
-        } catch (error) {
+            
+            // Gestisci la nuova struttura della risposta
+            if (response.data?.exists === false) {
+                // Ticket non esiste su Firestore, ma non è un errore critico
+                setFirestoreData(null);
+            } else if (response.data?.ticket) {
+                setFirestoreData(response.data.ticket);
+            } else {
+                // Retrocompatibilità: se la risposta è nel vecchio formato
+                setFirestoreData(response.data);
+            }
+        } catch (error: any) {
             console.error('Errore caricamento dati Firestore:', error);
+            // Non impostare errore globale per Firestore - sono dati secondari
             setFirestoreData(null);
         } finally {
             setLoadingFirestore(false);
         }
+    };
+
+    const retryLoadData = async () => {
+        setError(false);
+        setErrorMessage('');
+        await loadTaskDetail();
+        await loadComments();
+        await loadFirestoreData();
     };
 
     const formatDate = (date: Date) => {
@@ -268,7 +298,7 @@ export default function TicketDetailPage() {
         if (sectionName.includes('lavorazione') || sectionName.includes('in progress')) {
             return 'in_progress';
         } else if (sectionName.includes('completati') || sectionName.includes('completed') || sectionName.includes('done')) {
-            return 'resolved';
+            return 'completed';
         }
         return 'open';
     };
@@ -493,6 +523,45 @@ export default function TicketDetailPage() {
                                 <span>Torna indietro</span>
                             </HStack>
                         </Button>
+                    </VStack>
+                </Container>
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box minH="100vh" bg="gray.50" p={4}>
+                <Container maxW="container.md">
+                    <VStack gap={4} py={10}>
+                        <Icon as={FiX} boxSize={12} color="red.500" />
+                        <Text color="red.500" fontSize="lg" fontWeight="600" textAlign="center">
+                            Errore nel caricamento
+                        </Text>
+                        <Text color="gray.600" fontSize="sm" textAlign="center" maxW="400px">
+                            {errorMessage || 'Si è verificato un errore durante il caricamento del ticket.'}
+                        </Text>
+                        <HStack gap={3}>
+                            <Button
+                                onClick={retryLoadData}
+                                colorScheme="blue"
+                                loading={loadingDetail}
+                            >
+                                <HStack gap={2}>
+                                    <FiRefreshCw />
+                                    <span>Riprova</span>
+                                </HStack>
+                            </Button>
+                            <Button
+                                onClick={() => router.back()}
+                                variant="outline"
+                            >
+                                <HStack gap={2}>
+                                    <FiArrowLeft />
+                                    <span>Torna indietro</span>
+                                </HStack>
+                            </Button>
+                        </HStack>
                     </VStack>
                 </Container>
             </Box>

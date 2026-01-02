@@ -365,34 +365,37 @@ export async function createTaskStory(taskGid: string, text: string, isClientRep
     }
 
     try {
-        const body: any = {
-            data: {},
-        };
-
         // Se è una risposta del cliente, aggiungi un marcatore invisibile
         const marker = '\u200B'; // Zero-width space
-        if (isClientReply) {
-            body.data.text = `${marker}${text}`;
-        } else {
-            body.data.text = text;
-        }
+        const finalText = isClientReply ? `${marker}${text}` : text;
+
+        const body = {
+            data: {
+                text: finalText,
+            },
+        };
 
         const axios = require('axios');
-        const response = await axios.post(
-            `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}/stories`,
-            body,
-            {
-                headers: {
-                    'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        const url = `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}/stories`;
+        
+        const response = await axios.post(url, body, {
+            headers: {
+                'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json',
+            },
+        });
 
         return response.data;
     } catch (error: any) {
-        console.error('Errore creazione commento:', error);
-        throw new Error(error.message || 'Errore durante la creazione del commento');
+        console.error('[createTaskStory] ❌ Errore creazione commento:', {
+            message: error.message,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            taskGid,
+            textLength: text?.length,
+        });
+        throw new Error(error.response?.data?.errors?.[0]?.message || error.message || 'Errore durante la creazione del commento');
     }
 }
 

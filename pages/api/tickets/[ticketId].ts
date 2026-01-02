@@ -18,10 +18,22 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const ticket = await getTicket(ticketId);
+    
+    // Restituisci sempre 200, anche se il ticket non esiste
+    // Questo evita che axios sul frontend lanci eccezioni
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket non trovato' });
+      return res.status(200).json({ 
+        exists: false, 
+        ticket: null,
+        message: 'Ticket non trovato su Firestore' 
+      });
     }
-    return res.status(200).json(ticket);
+    
+    return res.status(200).json({ 
+      exists: true, 
+      ticket,
+      ...ticket 
+    });
   } catch (error: any) {
     console.error('[API] Errore recupero dettaglio ticket:', error);
     return res.status(500).json({ message: 'Errore interno', error: error.message });

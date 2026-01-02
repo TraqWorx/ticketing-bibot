@@ -27,14 +27,21 @@ axios.interceptors.request.use(async (config) => {
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Mostra la modale di sessione scaduta
+    if (error.response?.status === 401) {
       triggerSessionExpiredModal();
-      // Non propagare l'errore - viene gestito dalla modale globale
-      return new Promise(() => {}); // Promise che non si risolve mai, bloccando la propagazione
+
+      // Risolvi la promise con un valore controllato
+      return Promise.resolve(null);
     }
-    return Promise.reject(error);
+
+    return Promise.reject({
+      status: error.response?.status,
+      message:
+        error.response?.data?.message ||
+        'Errore server',
+    });
   }
 );
+
 
 export default axios;

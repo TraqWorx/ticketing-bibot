@@ -17,12 +17,11 @@
  */
 
 import {
-    GHLEventType,
+    GHLTicketCompletedPayload,
     GHLTicketCreatedPayload,
-    GHLTicketRepliedPayload,
-    GHLTicketClosedPayload,
     GHLTicketReopenedPayload,
-    MessageAuthor,
+    GHLTicketRepliedPayload,
+    MessageAuthor
 } from '@/types/ticket';
 
 interface SendMessageParams {
@@ -363,7 +362,8 @@ export async function sendTicketRepliedByClientEvent(params: {
     clientEmail?: string;
     priority?: string;
 }): Promise<boolean> {
-    const webhookUrl = process.env.GHL_WEBHOOK_CLIENT_REPLIED;
+    const sendTicketRepliedByClientToAdmin = process.env.GHL_WEBHOOK_CLIENT_REPLIED;
+    const sendTicketRepliedByClientToSuperAdminFollowUp = process.env.GHL_WEBHOOK_CLIENT_REPLIED_SUPER_ADMIN_FOLLOWUP;
 
     const payload: GHLTicketRepliedPayload = {
         event: 'ticket_replied_by_client',
@@ -381,7 +381,8 @@ export async function sendTicketRepliedByClientEvent(params: {
         },
     };
 
-    return sendWebhookToUrl(webhookUrl || '', payload);
+    sendWebhookToUrl(sendTicketRepliedByClientToAdmin || '', payload);
+    return sendWebhookToUrl(sendTicketRepliedByClientToSuperAdminFollowUp || '', payload);
 }
 
 /**
@@ -420,29 +421,29 @@ export async function sendTicketRepliedByAdminEvent(params: {
 /**
  * Invia evento: Ticket chiuso
  * 
- * Webhook URL: GHL_WEBHOOK_TICKET_CLOSED
+ * Webhook URL: GHL_WEBHOOK_TICKET_COMPLETED
  * 
  * GHL Workflow può:
  * - Inviare survey di soddisfazione
  * - Chiudere workflow attivi
  * - Aggiornare analytics
  */
-export async function sendTicketClosedEvent(params: {
+export async function sendTicketCompletedEvent(params: {
     clientId: string;
     ghlContactId?: string;
     ticketId: string;
 }): Promise<boolean> {
-    const webhookUrl = process.env.GHL_WEBHOOK_TICKET_CLOSED;
+    const webhookUrl = process.env.GHL_WEBHOOK_TICKET_COMPLETED;
 
-    const payload: GHLTicketClosedPayload = {
-        event: 'ticket_closed',
+    const payload: GHLTicketCompletedPayload = {
+        event: 'ticket_completed',
         timestamp: new Date().toISOString(),
         data: {
             clientId: params.clientId,
             ghlContactId: params.ghlContactId,
             ticketId: params.ticketId,
             ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
-            closedAt: new Date().toISOString(),
+            completedAt: new Date().toISOString(),
         },
     };
 

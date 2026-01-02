@@ -33,7 +33,7 @@
  * FLUSSO quando task viene completato:
  * 1. Asana invia webhook con story/marked_complete (metodo principale)
  * 2. OPPURE Asana invia webhook con task/completed changed (metodo alternativo)
- * 3. Backend chiude il ticket su Firestore (status = 'closed')
+ * 3. Backend chiude il ticket su Firestore (status = 'completed')
  * 4. Invia webhook evento a GHL per workflow chiusura ticket
  * 
  * FLUSSO quando task viene riaperto:
@@ -41,13 +41,21 @@
  * 2. Backend riapre il ticket su Firestore (status = 'open', waiting_for = 'client')
  * 3. Invia webhook evento a GHL per workflow riapertura ticket
  * 
+ * FLUSSO quando task viene eliminato:
+ * 1. Asana invia webhook con task/deleted o task/removed
+ * 2. Backend elimina il ticket da Firestore
+ * 
+ * FLUSSO quando cambia priorità del task:
+ * 1. Asana invia webhook con custom_fields changed
+ * 2. Backend aggiorna la priorità su Firestore
+ * 
  * NOTA: Asana richiede handshake iniziale con X-Hook-Secret
  * 
  * TEST: POST /api/webhooks/asana/test con payload di esempio
  */
 
-import { sendTicketClosedEvent, sendTicketReopenedEvent, sendTicketRepliedByAdminEvent, sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
-import { closeTicket, getTicket, reopenTicket, updateTicketOnReply, updateTicket, createTicket, getUserById } from '@/lib/ticket/ticketService';
+import { sendTicketCompletedEvent, sendTicketReopenedEvent, sendTicketRepliedByAdminEvent, sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
+import { closeTicket, getTicket, reopenTicket, updateTicketOnReply, updateTicket, createTicket, getUserById, deleteTicket } from '@/lib/ticket/ticketService';
 import { getStory, getTaskDetail } from '@/lib/asana/asanaService';
 import { NextApiRequest, NextApiResponse } from 'next';
 
@@ -101,7 +109,13 @@ async function processAsanaEvent(event: any): Promise<void> {
     return;
   }
 
-  // Evento: Custom fields del task modificati (per catturare quando viene settato task_creator_id)
+  // Evento: Task eliminato (SOLO deleted, non removed che potrebbe essere solo spostamento)
+  if (resource?.resource_type === 'task' && action === 'deleted') {
+    await handleTaskDeleted(event);
+    return;
+  }
+
+  // Evento: Custom fields del task modificati (per catturare quando viene settato task_creator_id o cambia priorità)
   if (resource?.resource_type === 'task' && action === 'changed' && event.change?.field === 'custom_fields') {
     await handleTaskCustomFieldsChanged(event);
     return;
@@ -132,6 +146,32 @@ async function processAsanaEvent(event: any): Promise<void> {
   }
 
   // Evento non gestito
+}
+
+/**
+ * Gestisce eliminazione task da Asana
+ */
+async function handleTaskDeleted(event: any): Promise<void> {
+  const { resource } = event;
+  const taskGid = resource?.gid;
+
+  if (!taskGid) {
+    return;
+  }
+
+  try {
+    // Verifica se il ticket esiste su Firestore
+    const ticket = await getTicket(taskGid);
+
+    if (!ticket) {
+      return;
+    }
+
+    // Elimina il ticket da Firestore
+    await deleteTicket(taskGid);
+  } catch (error: any) {
+    console.error('[Asana Webhook] Errore eliminazione ticket:', error.message, error.stack);
+  }
 }
 
 /**
@@ -258,7 +298,7 @@ async function handleTaskChanged(event: any): Promise<void> {
     }
 
     // Verifica se il ticket non è già chiuso
-    if (ticket.status === 'closed') {
+    if (ticket.status === 'completed') {
       return;
     }
 
@@ -267,7 +307,7 @@ async function handleTaskChanged(event: any): Promise<void> {
 
     // Invia notifica a GHL
     if (ticket.ghlContactId) {
-      const ghlResult = await sendTicketClosedEvent({
+      const ghlResult = await sendTicketCompletedEvent({
         clientId: ticket.clientId,
         ghlContactId: ticket.ghlContactId,
         ticketId: taskGid,
@@ -298,7 +338,7 @@ async function handleTaskMarkedComplete(event: any): Promise<void> {
     }
 
     // Verifica se il ticket non è già chiuso
-    if (ticket.status === 'closed') {
+    if (ticket.status === 'completed') {
       return;
     }
 
@@ -307,7 +347,7 @@ async function handleTaskMarkedComplete(event: any): Promise<void> {
 
     // Invia notifica a GHL
     if (ticket.ghlContactId) {
-      const ghlResult = await sendTicketClosedEvent({
+      const ghlResult = await sendTicketCompletedEvent({
         clientId: ticket.clientId,
         ghlContactId: ticket.ghlContactId,
         ticketId: taskGid,
@@ -364,21 +404,27 @@ async function handleTaskMarkedIncomplete(event: any): Promise<void> {
  * Gestisce creazione task (da admin su Asana)
  */
 async function handleTaskCreated(event: any): Promise<void> {
+  console.log('[Asana Webhook] Task creato ricevuto:', event);
   const { resource } = event;
   const taskGid = resource?.gid;
 
   if (!taskGid) {
+    console.warn('[Asana Webhook] taskGid mancante nell\'evento task created');
     return;
   }
 
   try {
     // Recupera i dettagli del task da Asana per ottenere custom fields
+    console.log(`[Asana Webhook] Recupero dettagli task ${taskGid}...`);
     const taskResponse = await getTaskDetail(taskGid);
     const taskData = taskResponse?.data;
 
     if (!taskData) {
+      console.warn(`[Asana Webhook] Dati task ${taskGid} non disponibili`);
       return;
     }
+
+    console.log(`[Asana Webhook] Task ${taskGid} - Nome: "${taskData.name}"`);
 
     // Trova il custom field task_creator_id
     const taskCreatorField = taskData.custom_fields?.find(
@@ -388,15 +434,21 @@ async function handleTaskCreated(event: any): Promise<void> {
     const taskCreatorId = taskCreatorField?.text_value || taskCreatorField?.enum_value?.gid;
 
     if (!taskCreatorId) {
+      console.warn(`[Asana Webhook] task_creator_id NON presente sul task ${taskGid} - il ticket sarà creato quando il campo verrà valorizzato`);
       return;
     }
+
+    console.log(`[Asana Webhook] task_creator_id trovato: ${taskCreatorId}`);
 
     // Recupera i dati del cliente da Firestore
     const client = await getUserById(taskCreatorId);
 
     if (!client) {
+      console.error(`[Asana Webhook] Cliente ${taskCreatorId} NON trovato su Firestore`);
       return;
     }
+
+    console.log(`[Asana Webhook] Cliente trovato: ${client.firstName} ${client.lastName}`);
 
     // Trova altri custom fields per priorità, nome, telefono
     const priorityField = taskData.custom_fields?.find(
@@ -421,13 +473,17 @@ async function handleTaskCreated(event: any): Promise<void> {
     const clientPhone = creatorPhoneField?.text_value || client.phone;
     const clientEmail = client.email;
 
+    console.log(`[Asana Webhook] Dati ticket: priority=${priority}, clientName=${clientName}`);
+
     // Verifica se il ticket esiste già (per evitare duplicati)
     const existingTicket = await getTicket(taskGid);
     if (existingTicket) {
+      console.log(`[Asana Webhook] Ticket ${taskGid} GIÀ ESISTENTE su Firestore - skip creazione`);
       return;
     }
 
     // Crea il ticket su Firestore
+    console.log(`[Asana Webhook] Creo ticket ${taskGid} su Firestore...`);
     const ticket = await createTicket({
       ticketId: taskGid,
       clientId: taskCreatorId,
@@ -439,8 +495,11 @@ async function handleTaskCreated(event: any): Promise<void> {
       clientEmail,
     });
 
+    console.log(`[Asana Webhook] Ticket ${taskGid} creato su Firestore con successo!`);
+
     // Invia notifica a GHL
     if (client.ghl_contact_id) {
+      console.log(`[Asana Webhook] Invio notifica creazione ticket a GHL...`);
       const ghlResult = await sendTicketCreatedEvent({
         clientId: taskCreatorId,
         ghlContactId: client.ghl_contact_id,
@@ -451,6 +510,9 @@ async function handleTaskCreated(event: any): Promise<void> {
         lastName: client.lastName,
         clientPhone,
       });
+      console.log(`[Asana Webhook] Notifica GHL inviata con successo`);
+    } else {
+      console.warn(`[Asana Webhook] ghl_contact_id NON presente per cliente ${taskCreatorId} - skip notifica GHL`);
     }
 
   } catch (error: any) {
@@ -459,24 +521,64 @@ async function handleTaskCreated(event: any): Promise<void> {
 }
 
 /**
- * Gestisce modifica custom fields del task (per catturare quando viene settato task_creator_id)
+ * Gestisce modifica custom fields del task (per catturare quando viene settato task_creator_id o cambia priorità)
  */
 async function handleTaskCustomFieldsChanged(event: any): Promise<void> {
+  console.log('[Asana Webhook] Custom fields modificati:', event);
   const { resource } = event;
   const taskGid = resource?.gid;
 
   if (!taskGid) {
+    console.warn('[Asana Webhook] taskGid mancante nell\'evento custom fields changed');
     return;
   }
 
   try {
+    console.log(`[Asana Webhook] Recupero dettagli task ${taskGid} per custom fields...`);
     // Recupera i dettagli del task da Asana per ottenere i custom fields aggiornati
     const taskResponse = await getTaskDetail(taskGid);
     const taskData = taskResponse?.data;
 
     if (!taskData) {
+      console.warn(`[Asana Webhook] Dati task ${taskGid} non disponibili`);
       return;
     }
+
+    // Verifica se il ticket esiste già
+    const existingTicket = await getTicket(taskGid);
+
+    // Trova il custom field della priorità
+    const priorityField = taskData.custom_fields?.find(
+      (field: any) => field.gid === process.env.ASANA_TASK_PRIORITY_CUSTOM_FIELD
+    );
+
+    // Se il ticket esiste e la priorità è cambiata, aggiornala
+    if (existingTicket && priorityField) {
+      console.log(`[Asana Webhook] Ticket ${taskGid} esiste, verifico priorità...`);
+      let priority: 'low' | 'medium' | 'high' = 'medium'; // default
+      if (priorityField?.enum_value?.gid === process.env.ASANA_PRIORITY_LOW_OPTION_GID) {
+        priority = 'low';
+      } else if (priorityField?.enum_value?.gid === process.env.ASANA_PRIORITY_HIGH_OPTION_GID) {
+        priority = 'high';
+      }
+
+      // Aggiorna la priorità solo se è cambiata
+      if (existingTicket.priority !== priority) {
+        await updateTicket(taskGid, { priority });
+        console.log(`[Asana Webhook] Priorità ticket ${taskGid} aggiornata a ${priority}`);
+      } else {
+        console.log(`[Asana Webhook] Priorità ticket ${taskGid} non cambiata (${priority})`);
+      }
+      return;
+    }
+
+    // Se il ticket non esiste, verifica se è una creazione con task_creator_id
+    if (existingTicket) {
+      console.log(`[Asana Webhook] Ticket ${taskGid} già esiste, skip creazione`);
+      return;
+    }
+
+    console.log(`[Asana Webhook] Ticket ${taskGid} NON esiste, verifico se creare da task_creator_id...`);
 
     // Trova il custom field task_creator_id
     const taskCreatorField = taskData.custom_fields?.find(
@@ -486,26 +588,23 @@ async function handleTaskCustomFieldsChanged(event: any): Promise<void> {
     const taskCreatorId = taskCreatorField?.text_value || taskCreatorField?.enum_value?.gid;
 
     if (!taskCreatorId) {
+      console.warn(`[Asana Webhook] task_creator_id NON presente per task ${taskGid} - impossibile creare ticket`);
       return;
     }
 
-    // Verifica se il ticket esiste già (per evitare duplicati)
-    const existingTicket = await getTicket(taskGid);
-    if (existingTicket) {
-      return;
-    }
+    console.log(`[Asana Webhook] task_creator_id trovato: ${taskCreatorId}, procedo con creazione ticket...`);
 
     // Recupera i dati del cliente da Firestore
     const client = await getUserById(taskCreatorId);
 
     if (!client) {
+      console.error(`[Asana Webhook] Cliente ${taskCreatorId} NON trovato su Firestore`);
       return;
     }
 
-    // Trova altri custom fields per priorità, nome, telefono
-    const priorityField = taskData.custom_fields?.find(
-      (field: any) => field.gid === process.env.ASANA_TASK_PRIORITY_CUSTOM_FIELD
-    );
+    console.log(`[Asana Webhook] Cliente trovato: ${client.firstName} ${client.lastName}`);
+
+    // Trova altri custom fields per nome, telefono (priorityField già dichiarato sopra)
     const creatorNameField = taskData.custom_fields?.find(
       (field: any) => field.gid === process.env.ASANA_TASK_CREATOR_NAME_CUSTOM_FIELD
     );
@@ -513,7 +612,7 @@ async function handleTaskCustomFieldsChanged(event: any): Promise<void> {
       (field: any) => field.gid === process.env.ASANA_TASK_CREATOR_PHONE_CUSTOM_FIELD
     );
 
-    // Determina priorità
+    // Determina priorità (riuso la variabile priorityField già dichiarata sopra)
     let priority: 'low' | 'medium' | 'high' = 'medium'; // default
     if (priorityField?.enum_value?.gid === process.env.ASANA_PRIORITY_LOW_OPTION_GID) {
       priority = 'low';
@@ -525,6 +624,7 @@ async function handleTaskCustomFieldsChanged(event: any): Promise<void> {
     const clientPhone = creatorPhoneField?.text_value || client.phone;
     const clientEmail = client.email;
 
+    console.log(`[Asana Webhook] Creo ticket ${taskGid} su Firestore da custom fields change...`);
     // Crea il ticket su Firestore
     const ticket = await createTicket({
       ticketId: taskGid,
@@ -537,8 +637,11 @@ async function handleTaskCustomFieldsChanged(event: any): Promise<void> {
       clientEmail,
     });
 
+    console.log(`[Asana Webhook] Ticket ${taskGid} creato su Firestore con successo!`);
+
     // Invia notifica a GHL
     if (client.ghl_contact_id) {
+      console.log(`[Asana Webhook] Invio notifica creazione ticket a GHL...`);
       const ghlResult = await sendTicketCreatedEvent({
         clientId: taskCreatorId,
         ghlContactId: client.ghl_contact_id,
@@ -549,6 +652,9 @@ async function handleTaskCustomFieldsChanged(event: any): Promise<void> {
         lastName: client.lastName,
         clientPhone,
       });
+      console.log(`[Asana Webhook] Notifica GHL inviata con successo`);
+    } else {
+      console.warn(`[Asana Webhook] ghl_contact_id NON presente per cliente ${taskCreatorId} - skip notifica GHL`);
     }
 
   } catch (error: any) {

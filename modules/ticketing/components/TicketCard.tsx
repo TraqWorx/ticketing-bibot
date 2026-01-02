@@ -70,7 +70,7 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
 
   // Colore bordo basato su status dalle sezioni Asana
   const getStatusBorderColor = () => {
-    if (ticket.status === TicketStatus.RESOLVED || ticket.status === TicketStatus.CLOSED) {
+    if (ticket.status === TicketStatus.COMPLETED) {
       return 'green.400';
     }
     if (ticket.status === TicketStatus.IN_PROGRESS) {

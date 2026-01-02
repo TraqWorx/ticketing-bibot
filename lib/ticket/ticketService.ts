@@ -134,7 +134,7 @@ export async function closeTicket(ticketId: string): Promise<void> {
     .collection(TICKETS_COLLECTION)
     .doc(ticketId)
     .update({
-      status: 'closed' as TicketStatus,
+      status: 'completed' as TicketStatus,
       waitingFor: null,
       lastActivityAt: FieldValue.serverTimestamp(),
     });
@@ -182,6 +182,16 @@ export async function updateTicket(
       ...updates,
       lastActivityAt: FieldValue.serverTimestamp(),
     });
+}
+
+/**
+ * Elimina un ticket da Firestore
+ */
+export async function deleteTicket(ticketId: string): Promise<void> {
+  await adminDb
+    .collection(TICKETS_COLLECTION)
+    .doc(ticketId)
+    .delete();
 }
 
 /**

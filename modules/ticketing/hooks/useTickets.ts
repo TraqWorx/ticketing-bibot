@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useBreakpointValue } from '@chakra-ui/react';
 import { Ticket, TicketStatus } from '../types';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from '@/utils/axios';
@@ -26,7 +27,9 @@ export const useTickets = () => {
     inProgress: { currentPage: 1 },
     completed: { currentPage: 1 },
   });
-  const ITEMS_PER_PAGE = 8;
+  
+  // Paginazione responsiva: 5 elementi su mobile, 8 su desktop
+  const ITEMS_PER_PAGE = useBreakpointValue({ base: 5, md: 8 }) || 8;
 
   const loadTickets = async (resetPagination: boolean = true) => {
     if (!user?.id) {

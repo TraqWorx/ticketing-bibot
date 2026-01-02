@@ -69,7 +69,7 @@ FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
   "ticketId": "asana_task_gid",
   "clientId": "firebase_user_id",
   "ghlContactId": "optional_ghl_contact_id",
-  "status": "open" | "closed",
+  "status": "open" | "completed",
   "waitingFor": "admin" | "client" | null,
   "title": "task_title_from_asana",
   "priority": "high" | "medium" | "low",
