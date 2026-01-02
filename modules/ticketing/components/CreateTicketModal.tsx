@@ -475,14 +475,14 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
                     display="none"
                     onChange={handleFileChange}
                     disabled={isSubmitting}
-                    accept="image/*,.pdf,.doc,.docx,.txt"
+                    accept="image/*,.pdf,.doc,.docx,.txt,video/*"
                     multiple
                   />
                 </Box>
 
                 {/* Info tipi file accettati */}
                 <Text fontSize="xs" color="gray.500" mt={2} mb={attachments.length > 0 ? 4 : 0}>
-                  Formati supportati: Immagini (JPG, PNG, GIF), PDF, Word (DOC, DOCX), TXT
+                  Formati supportati: Immagini (JPG, PNG, GIF), PDF, Word (DOC, DOCX), TXT, Video (MP4, AVI, MOV, etc.)
                 </Text>
 
                 {/* Lista allegati caricati */}
