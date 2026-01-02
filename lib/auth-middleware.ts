@@ -154,7 +154,6 @@ function verifyApiKey(apiKey: string): ServiceIdentity | null {
   const service = validApiKeys[apiKey];
   
   if (service) {
-    console.log(`[Auth] Servizio autenticato: ${service.name}`);
     return service;
   }
 

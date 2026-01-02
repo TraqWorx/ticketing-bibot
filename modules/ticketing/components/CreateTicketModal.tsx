@@ -12,7 +12,7 @@
  * Pattern: Controlled modal con form
  */
 
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useEffect } from 'react';
 import {
   Button,
   VStack,
@@ -22,8 +22,9 @@ import {
   HStack,
   Box,
   Icon,
+  Badge,
 } from '@chakra-ui/react';
-import { FiUpload, FiX } from 'react-icons/fi';
+import { FiUpload, FiX, FiPaperclip } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/contexts/AuthContext';
 import { Modal } from '@/components/Modal';
@@ -65,6 +66,17 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
     priority: 'medium' as 'high' | 'medium' | 'low' | 'none',
   });
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [newlyAddedFiles, setNewlyAddedFiles] = useState<number>(0);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragCounter, setDragCounter] = useState(0);
+
+  // Reset contatore nuovi file dopo 3 secondi
+  useEffect(() => {
+    if (newlyAddedFiles > 0) {
+      const timer = setTimeout(() => setNewlyAddedFiles(0), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [newlyAddedFiles]);
 
   // Handler cambio campi form
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -78,14 +90,76 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
     if (files) {
       const fileArray = Array.from(files);
       
-      // Limite 10MB per file
-      const invalidFiles = fileArray.filter(file => file.size > 10 * 1024 * 1024);
+      // Limite 50MB per file
+      const invalidFiles = fileArray.filter(file => file.size > 50 * 1024 * 1024);
       if (invalidFiles.length > 0) {
-        toast.error('Alcuni file superano il limite di 10MB');
+        toast.error('Alcuni file superano il limite di 50MB');
         return;
       }
       
       setAttachments(prev => [...prev, ...fileArray]);
+      setNewlyAddedFiles(fileArray.length);
+      
+      // Notifica aggiunta file
+      if (fileArray.length === 1) {
+        toast.success(`File "${fileArray[0].name}" aggiunto`);
+      } else {
+        toast.success(`${fileArray.length} file aggiunti`);
+      }
+      
+      // Reset del campo file per permettere di selezionare gli stessi file di nuovo
+      e.target.value = '';
+    }
+  };
+
+  // Handler drag & drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => prev + 1);
+    // Attiva drag over solo se ci sono file
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => {
+      const newCounter = prev - 1;
+      if (newCounter === 0) {
+        setIsDragOver(false);
+      }
+      return newCounter > 0 ? newCounter : 0;
+    });
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    setDragCounter(0);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      
+      // Limite 50MB per file
+      const invalidFiles = fileArray.filter(file => file.size > 50 * 1024 * 1024);
+      if (invalidFiles.length > 0) {
+        toast.error('Alcuni file superano il limite di 50MB');
+        return;
+      }
+      
+      setAttachments(prev => [...prev, ...fileArray]);
+      setNewlyAddedFiles(fileArray.length);
+      
     }
   };
 
@@ -305,9 +379,24 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
 
               {/* Allegato */}
               <Box>
-                <Text fontSize="sm" fontWeight="600" color="gray.700" mb={2}>
-                  Allegati (opzionali)
-                </Text>
+                <HStack justify="space-between" align="center" mb={2}>
+                  <HStack gap={2}>
+                    <Icon as={FiPaperclip} color="gray.600" />
+                    <Text fontSize="sm" fontWeight="600" color="gray.700">
+                      Allegati (opzionali)
+                    </Text>
+                    {attachments.length > 0 && (
+                      <Badge colorScheme="blue" variant="subtle" fontSize="xs">
+                        {attachments.length}
+                      </Badge>
+                    )}
+                  </HStack>
+                  {newlyAddedFiles > 0 && (
+                    <Badge colorScheme="green" variant="solid" fontSize="xs" animation="pulse 2s infinite">
+                      +{newlyAddedFiles} aggiunti
+                    </Badge>
+                  )}
+                </HStack>
                 
                 {/* Area upload */}
                 <Box
@@ -319,17 +408,68 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
                   p={4}
                   borderWidth="2px"
                   borderStyle="dashed"
-                  borderColor="gray.300"
+                  borderColor={
+                    isDragOver 
+                      ? "green.400" 
+                      : attachments.length > 0 
+                        ? "blue.300" 
+                        : "gray.300"
+                  }
                   borderRadius="md"
                   cursor="pointer"
-                  _hover={{ borderColor: 'gray.400', bg: 'gray.50' }}
+                  bg={
+                    isDragOver 
+                      ? "green.50" 
+                      : newlyAddedFiles > 0 
+                        ? "green.50" 
+                        : "transparent"
+                  }
+                  _hover={{ 
+                    borderColor: isDragOver 
+                      ? "green.500" 
+                      : attachments.length > 0 
+                        ? "blue.400" 
+                        : "gray.400", 
+                    bg: isDragOver 
+                      ? "green.100" 
+                      : attachments.length > 0 
+                        ? "blue.50" 
+                        : "gray.50" 
+                  }}
                   transition="all 0.2s"
-                  mb={attachments.length > 0 ? 3 : 0}
+                  mb={attachments.length > 0 ? 4 : 0}
+                  onDragOver={handleDragOver}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  position="relative"
                 >
-                  <Icon as={FiUpload} color="gray.500" />
-                  <Text fontSize="sm" color="gray.600">
-                    Clicca per caricare file (max 10MB ciascuno)
-                  </Text>
+                  <Icon as={FiUpload} color={
+                    isDragOver 
+                      ? "green.500" 
+                      : attachments.length > 0 
+                        ? "blue.500" 
+                        : "gray.500"
+                  } />
+                  <VStack gap={1}>
+                    <Text fontSize="sm" color={
+                      isDragOver 
+                        ? "green.600" 
+                        : attachments.length > 0 
+                          ? "blue.600" 
+                          : "gray.600"
+                    } fontWeight="500">
+                      {isDragOver 
+                        ? "Rilascia i file qui" 
+                        : attachments.length > 0 
+                          ? `Aggiungi altri file (${attachments.length} caricati)` 
+                          : "Clicca o trascina per caricare file"
+                      }
+                    </Text>
+                    <Text fontSize="xs" color={isDragOver ? "green.500" : "gray.500"}>
+                      {isDragOver ? "🎯 Rilascia per caricare" : "📁 Massimo 50MB per file"}
+                    </Text>
+                  </VStack>
                   <Input
                     type="file"
                     display="none"
@@ -341,43 +481,54 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
                 </Box>
 
                 {/* Info tipi file accettati */}
-                <Text fontSize="xs" color="gray.500" mt={2} mb={attachments.length > 0 ? 3 : 0}>
+                <Text fontSize="xs" color="gray.500" mt={2} mb={attachments.length > 0 ? 4 : 0}>
                   Formati supportati: Immagini (JPG, PNG, GIF), PDF, Word (DOC, DOCX), TXT
                 </Text>
 
                 {/* Lista allegati caricati */}
                 {attachments.length > 0 && (
-                  <VStack gap={2} align="stretch">
-                    {attachments.map((file, index) => (
-                      <HStack
-                        key={index}
-                        p={3}
-                        bg="gray.50"
-                        borderRadius="md"
-                        justify="space-between"
-                      >
-                        <HStack gap={2}>
-                          <Icon as={FiUpload} color="gray.600" />
-                          <VStack align="start" gap={0}>
-                            <Text fontSize="sm" fontWeight="500">
-                              {file.name}
-                            </Text>
-                            <Text fontSize="xs" color="gray.500">
-                              {(file.size / 1024).toFixed(2)} KB
-                            </Text>
-                          </VStack>
-                        </HStack>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemoveAttachment(index)}
-                          disabled={isSubmitting}
+                  <Box>
+                    <Text fontSize="sm" fontWeight="600" color="gray.700" mb={3}>
+                      File allegati ({attachments.length})
+                    </Text>
+                    <VStack gap={2} align="stretch" maxH="200px" overflowY="auto">
+                      {attachments.map((file, index) => (
+                        <HStack
+                          key={index}
+                          p={3}
+                          bg="gray.50"
+                          borderRadius="md"
+                          justify="space-between"
+                          border="1px solid"
+                          borderColor="gray.200"
+                          _hover={{ bg: "gray.100", borderColor: "gray.300" }}
+                          transition="all 0.2s"
                         >
-                          <Icon as={FiX} />
-                        </Button>
-                      </HStack>
-                    ))}
-                  </VStack>
+                          <HStack gap={3}>
+                            <Icon as={FiPaperclip} color="gray.600" />
+                            <VStack align="start" gap={0} minW="0" flex="1">
+                              <Text fontSize="sm" fontWeight="500" maxW="200px" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+                                {file.name}
+                              </Text>
+                              <Text fontSize="xs" color="gray.500">
+                                {(file.size / 1024).toFixed(2)} KB
+                              </Text>
+                            </VStack>
+                          </HStack>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="red"
+                            onClick={() => handleRemoveAttachment(index)}
+                            disabled={isSubmitting}
+                            _hover={{ bg: "red.50" }}
+                          >
+                            <Icon as={FiX} />
+                          </Button>
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </Box>
                 )}
               </Box>
             </VStack>

@@ -15,10 +15,10 @@
  */
 
 import { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Heading, 
-  Button, 
+import {
+  Box,
+  Heading,
+  Button,
   HStack,
   VStack,
   Text,
@@ -43,7 +43,7 @@ export default function UsersManagementPage() {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ userId: string; clientName: string } | null>(null);
   const [ticketUserTarget, setTicketUserTarget] = useState<User | null>(null);
-  
+
   // Paginazione e filtri
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -274,7 +274,7 @@ export default function UsersManagementPage() {
               </HStack>
             </Button>
           </Flex>
-          
+
           {/* Search Bar - Responsive */}
           <Flex gap={2} direction={{ base: 'column', md: 'row' }} align={{ base: 'stretch', md: 'center' }}>
             <Box position="relative" flex={{ base: 1, md: '0 0 300px' }}>
@@ -327,14 +327,14 @@ export default function UsersManagementPage() {
               onDeleteUser={handleDeleteUser}
               onCreateTicket={handleCreateTicketForUser}
             />
-            
+
             {/* Paginazione */}
             {totalPages > 1 && (
               <VStack gap={4} mt={6} pt={4} borderTopWidth="1px" align="stretch">
                 <Text fontSize="sm" color="gray.600" textAlign="center">
                   Pagina {currentPage} di {totalPages}
                 </Text>
-                
+
                 <VStack gap={3} align="stretch">
                   {/* Pulsanti di navigazione principale */}
                   <HStack gap={2} justify="center">
@@ -350,7 +350,7 @@ export default function UsersManagementPage() {
                         <Text display={{ base: 'none', sm: 'inline' }}>Precedente</Text>
                       </HStack>
                     </Button>
-                    
+
                     <Button
                       size="sm"
                       variant="ghost"
@@ -371,14 +371,14 @@ export default function UsersManagementPage() {
                       .filter(page => {
                         // Mostra: prima pagina, ultima pagina, pagina corrente e ±1
                         return page === 1 ||
-                               page === totalPages ||
-                               Math.abs(page - currentPage) <= 1;
+                          page === totalPages ||
+                          Math.abs(page - currentPage) <= 1;
                       })
                       .map((page, idx, arr) => {
                         // Aggiungi "..." se ci sono gap
                         const prevPage = arr[idx - 1];
                         const showEllipsis = prevPage && page - prevPage > 1;
-                        
+
                         return (
                           <Box key={page}>
                             {showEllipsis && (
