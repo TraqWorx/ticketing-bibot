@@ -100,13 +100,6 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
       setAttachments(prev => [...prev, ...fileArray]);
       setNewlyAddedFiles(fileArray.length);
       
-      // Notifica aggiunta file
-      if (fileArray.length === 1) {
-        toast.success(`File "${fileArray[0].name}" aggiunto`);
-      } else {
-        toast.success(`${fileArray.length} file aggiunti`);
-      }
-      
       // Reset del campo file per permettere di selezionare gli stessi file di nuovo
       e.target.value = '';
     }
