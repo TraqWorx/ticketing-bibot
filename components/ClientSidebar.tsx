@@ -14,7 +14,7 @@
 
 import { Box, VStack, HStack, Text, Icon, IconButton, CloseButton, Separator } from '@chakra-ui/react';
 import { Drawer } from '@chakra-ui/react';
-import { FiFileText, FiMenu, FiHelpCircle } from 'react-icons/fi';
+import { FiFileText, FiMenu, FiHelpCircle, FiLink } from 'react-icons/fi';
 import { useRouter } from 'next/router';
 import { ReactElement, useState } from 'react';
 
@@ -26,6 +26,11 @@ interface MenuItem {
 
 // Menu CLIENT - Sezione Support
 const supportMenuItems: MenuItem[] = [
+    {
+        label: 'Link Rapidi',
+        icon: <FiLink />,
+        path: '/clienti/link-rapidi',
+    },
     {
         label: 'Ticketing',
         icon: <FiFileText />,

@@ -36,7 +36,7 @@ async function getAuthToken(): Promise<string | null> {
  * Crea nuovo utente CLIENT (via API backend)
  * Invia automaticamente email per impostare password
  */
-export const createClientUser = async (input: CreateUserInput): Promise<{ user: User; message: string }> => {
+export const createClientUser = async (input: CreateUserInput): Promise<{ user: User; message: string; userId: string }> => {
   const token = await getAuthToken();
   
   if (!token) {
@@ -53,6 +53,7 @@ export const createClientUser = async (input: CreateUserInput): Promise<{ user: 
     return {
       user: response.data.user,
       message: response.data.message,
+      userId: response.data.user.id,
     };
   } catch (error: any) {
     // Gestione errori axios - estrai il messaggio dal backend

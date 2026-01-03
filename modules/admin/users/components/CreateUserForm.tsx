@@ -22,13 +22,17 @@ import {
     Input,
     Button,
     Text,
-    Heading
+    Heading,
+    IconButton,
+    Separator
 } from '@chakra-ui/react';
+import { FiPlus, FiTrash2, FiLink } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { CreateUserInput } from '@/types/user';
+import { CreateCustomLinkInput } from '@/types/customLink';
 
 interface CreateUserFormProps {
-    onSubmit: (data: CreateUserInput) => Promise<void>;
+    onSubmit: (data: CreateUserInput, customLinks: CreateCustomLinkInput[]) => Promise<void>;
     onCancel?: () => void;
 }
 
@@ -40,6 +44,7 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
         phone: '',
     });
 
+    const [customLinks, setCustomLinks] = useState<CreateCustomLinkInput[]>([]);
     const [errors, setErrors] = useState<Partial<Record<keyof CreateUserInput, string>>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,13 +78,28 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
 
         setIsSubmitting(true);
         try {
-            await onSubmit(formData);
+            await onSubmit(formData, customLinks);
         } catch (error) {
             // Errore gestito dal parent
             console.error('Form submission error:', error);
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // Gestione custom links
+    const addCustomLink = () => {
+        setCustomLinks([...customLinks, { label: '', url: '' }]);
+    };
+
+    const removeCustomLink = (index: number) => {
+        setCustomLinks(customLinks.filter((_, i) => i !== index));
+    };
+
+    const updateCustomLink = (index: number, field: 'label' | 'url', value: string) => {
+        const updated = [...customLinks];
+        updated[index][field] = value;
+        setCustomLinks(updated);
     };
 
     return (
@@ -149,6 +169,72 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
                     <Text fontSize="sm" color="gray.700">
                         Il contatto verrà automaticamente creato o recuperato da <strong>Go High Level</strong>. Il cliente riceverà un'email con un <strong>link sicuro</strong> per impostare la propria password.
                     </Text>
+                </Box>
+
+                {/* Custom Links Section */}
+                <Box mt={6}>
+                    <Separator mb={6} />
+                    
+                    <HStack justify="space-between" mb={4}>
+                        <HStack gap={2}>
+                            <FiLink />
+                            <Heading size="sm">Link Rapidi (Opzionale)</Heading>
+                        </HStack>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={addCustomLink}
+                        >
+                            Aggiungi Link
+                        </Button>
+                    </HStack>
+
+                    <Text fontSize="sm" color="gray.600" mb={4}>
+                        Aggiungi link rapidi personalizzati per il cliente (es: cartella Drive, documenti, brochure, etc.)
+                    </Text>
+
+                    {customLinks.length > 0 && (
+                        <VStack gap={3} align="stretch">
+                            {customLinks.map((link, index) => (
+                                <Box
+                                    key={index}
+                                    p={4}
+                                    bg="gray.50"
+                                    borderRadius="md"
+                                    borderWidth="1px"
+                                    borderColor="gray.200"
+                                >
+                                    <HStack align="start" gap={3}>
+                                        <VStack flex={1} gap={3} align="stretch">
+                                            <Input
+                                                placeholder="Nome del link (es: Cartella Drive)"
+                                                value={link.label}
+                                                onChange={(e) => updateCustomLink(index, 'label', e.target.value)}
+                                                bg="white"
+                                                size="sm"
+                                            />
+                                            <Input
+                                                placeholder="https://..."
+                                                value={link.url}
+                                                onChange={(e) => updateCustomLink(index, 'url', e.target.value)}
+                                                bg="white"
+                                                size="sm"
+                                            />
+                                        </VStack>
+                                        <IconButton
+                                            aria-label="Rimuovi link"
+                                            onClick={() => removeCustomLink(index)}
+                                            colorScheme="red"
+                                            variant="ghost"
+                                            size="sm"
+                                        >
+                                            <FiTrash2 />
+                                        </IconButton>
+                                    </HStack>
+                                </Box>
+                            ))}
+                        </VStack>
+                    )}
                 </Box>
 
                 {/* Actions */}

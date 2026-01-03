@@ -35,6 +35,8 @@ import { UsersTable } from '../components/UsersTable';
 import { CreateTicketModal } from '@/modules/ticketing/components/CreateTicketModal';
 import { createClientUser, getClientUsers, updateUser, deleteUser } from '@/services/users.service';
 import { User, CreateUserInput } from '@/types/user';
+import { CreateCustomLinkInput, CustomLink } from '@/types/customLink';
+import axios from '@/utils/axios';
 
 export default function UsersManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -96,9 +98,33 @@ export default function UsersManagementPage() {
   };
 
   // Handle creazione utente
-  const handleCreateUser = async (data: CreateUserInput) => {
+  const handleCreateUser = async (data: CreateUserInput, customLinks: CreateCustomLinkInput[]) => {
     try {
-      const { message } = await createClientUser(data);
+      const { message, userId } = await createClientUser(data);
+      
+      // Salva i custom link se presenti
+      if (customLinks.length > 0 && userId) {
+        const linksWithIds = customLinks
+          .filter(link => link.label.trim() && link.url.trim())
+          .map((link, index) => ({
+            id: `link_${Date.now()}_${index}`,
+            label: link.label,
+            url: link.url,
+            icon: link.icon,
+            order: index,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }));
+
+        if (linksWithIds.length > 0) {
+          await axios.post('/api/custom-links/manage', {
+            action: 'set',
+            userId,
+            data: linksWithIds,
+          });
+        }
+      }
+
       toast.success(
         `${message}`,
         { autoClose: 8000 }
@@ -129,11 +155,30 @@ export default function UsersManagementPage() {
   };
 
   // Handle submit modifica
-  const handleUpdateUser = async (data: { firstName: string; lastName: string; phone: string; ghl_contact_id: string }) => {
+  const handleUpdateUser = async (
+    data: { firstName: string; lastName: string; phone: string; ghl_contact_id: string },
+    customLinks: CustomLink[]
+  ) => {
     if (!editUser) return;
 
     try {
       await updateUser(editUser.id, data);
+      
+      // Aggiorna i custom link
+      const linksToSave = customLinks
+        .filter(link => link.label.trim() && link.url.trim())
+        .map((link, index) => ({
+          ...link,
+          order: index,
+          updatedAt: new Date(),
+        }));
+
+      await axios.post('/api/custom-links/manage', {
+        action: 'set',
+        userId: editUser.id,
+        data: linksToSave,
+      });
+
       toast.success('Cliente aggiornato con successo');
       setEditUser(null);
       await loadUsers();
