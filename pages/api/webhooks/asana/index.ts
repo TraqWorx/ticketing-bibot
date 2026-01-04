@@ -55,6 +55,7 @@
  */
 
 import { sendTicketCompletedEvent, sendTicketReopenedEvent, sendTicketRepliedByAdminEvent, sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
+import { triggerN8NClientResponseFollowup } from '@/lib/n8n/n8nService';
 import { closeTicket, getTicket, reopenTicket, updateTicketOnReply, updateTicket, createTicket, getUserById, deleteTicket } from '@/lib/ticket/ticketService';
 import { getStory, getTaskDetail } from '@/lib/asana/asanaService';
 import { NextApiRequest, NextApiResponse } from 'next';
@@ -210,7 +211,7 @@ async function handleNewStory(event: any): Promise<void> {
     if (storyText.startsWith(marker)) {
       return;
     }
-    
+
     // È una risposta manuale dell'admin su Asana
     await updateTicketOnReply({
       ticketId: taskGid,
@@ -224,6 +225,17 @@ async function handleNewStory(event: any): Promise<void> {
         clientId: ticket.clientId,
         ghlContactId: ticket.ghlContactId,
         ticketId: taskGid,
+      });
+
+      // Invia evento a N8N per automazione solleciti (24h, 48h, 72h)
+      await triggerN8NClientResponseFollowup({
+        clientId: ticket.clientId,
+        ghlContactId: ticket.ghlContactId,
+        ticketId: taskGid,
+        clientName: ticket.clientName,
+        clientPhone: ticket.clientPhone,
+        clientEmail: ticket.clientEmail,
+        priority: ticket.priority,
       });
     }
   } catch (error: any) {

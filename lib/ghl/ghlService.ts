@@ -24,107 +24,6 @@ import {
     MessageAuthor
 } from '@/types/ticket';
 
-interface SendMessageParams {
-    contactId: string;
-    message: string;
-    phoneNumber?: string;
-}
-
-/**
- * Invia un messaggio tramite Go High Level
- */
-export async function sendMessage(params: SendMessageParams): Promise<any> {
-    const {
-        contactId,
-        message,
-    } = params;
-
-    if (!process.env.GHL_API_BASE_URL) {
-        throw new Error('GHL_API_BASE_URL non configurato nel .env');
-    }
-    if (!process.env.GHL_API_ACCESS_TOKEN) {
-        throw new Error('GHL_API_ACCESS_TOKEN non configurato nel .env');
-    }
-    if (!contactId) {
-        throw new Error('contactId è obbligatorio');
-    }
-    if (!message || typeof message !== 'string' || !message.trim()) {
-        throw new Error('Il messaggio è obbligatorio');
-    }
-
-    try {
-        const axios = require('axios');
-
-        // Endpoint GHL ufficiale per inviare messaggi
-        // Documentazione: https://marketplace.gohighlevel.com/docs/ghl/conversations/send-a-new-message
-        const url = `${process.env.GHL_API_BASE_URL}/conversations/messages`;
-
-        const body = {
-            type: 'SMS',
-            contactId: contactId,
-            message: message,
-        };
-
-        const response = await axios.post(url, body, {
-            headers: {
-                'Authorization': `Bearer ${process.env.GHL_API_ACCESS_TOKEN}`,
-                'Content-Type': 'application/json',
-                'Version': '2021-04-15',
-            },
-        });
-
-        return response.data;
-    } catch (error: any) {
-        // Gestisci errori axios
-        if (error.response) {
-            console.error('[sendWhatsAppMessage] Errore risposta status:', error.response.status);
-            console.error('[sendWhatsAppMessage] Errore risposta data:', error.response.data);
-            const errorMessage = error.response.data?.error?.message ||
-                error.response.data?.message ||
-                `Errore invio messaggio: ${error.response.status} ${error.response.statusText}`;
-            throw new Error(errorMessage);
-        }
-
-        console.error('[sendWhatsAppMessage] Errore invio messaggio:', {
-            error: error.message,
-            contactId,
-        });
-        throw new Error(error.message || 'Errore durante l\'invio del messaggio');
-    }
-}
-
-/**
- * Recupera informazioni di un contatto da Go High Level
- */
-export async function getGHLContact(contactId: string): Promise<any> {
-    if (!process.env.GHL_API_BASE_URL) {
-        throw new Error('GHL_API_BASE_URL non configurato nel .env');
-    }
-    if (!process.env.GHL_API_ACCESS_TOKEN) {
-        throw new Error('GHL_API_ACCESS_TOKEN non configurato nel .env');
-    }
-    if (!contactId) {
-        throw new Error('contactId è obbligatorio');
-    }
-
-    try {
-        const axios = require('axios');
-        const response = await axios.get(
-            `${process.env.GHL_API_BASE_URL}/contacts/${contactId}`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${process.env.GHL_API_ACCESS_TOKEN}`,
-                },
-            }
-        );
-
-        return response.data;
-    } catch (error: any) {
-        console.error('Errore recupero contatto GHL:', error);
-        throw new Error(error.message || 'Errore durante il recupero del contatto GHL');
-    }
-}
-
 /**
  * Cerca un contatto su Go High Level per email
  */
@@ -363,7 +262,6 @@ export async function sendTicketRepliedByClientEvent(params: {
     priority?: string;
 }): Promise<boolean> {
     const sendTicketRepliedByClientToAdmin = process.env.GHL_WEBHOOK_CLIENT_REPLIED;
-    const sendTicketRepliedByClientToSuperAdminFollowUp = process.env.GHL_WEBHOOK_CLIENT_REPLIED_SUPER_ADMIN_FOLLOWUP;
 
     const payload: GHLTicketRepliedPayload = {
         event: 'ticket_replied_by_client',
@@ -381,8 +279,7 @@ export async function sendTicketRepliedByClientEvent(params: {
         },
     };
 
-    sendWebhookToUrl(sendTicketRepliedByClientToAdmin || '', payload);
-    return sendWebhookToUrl(sendTicketRepliedByClientToSuperAdminFollowUp || '', payload);
+    return sendWebhookToUrl(sendTicketRepliedByClientToAdmin || '', payload);
 }
 
 /**
