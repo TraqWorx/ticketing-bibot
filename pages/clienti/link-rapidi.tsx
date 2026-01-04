@@ -24,6 +24,7 @@ import {
   Spinner,
   Icon,
   Link as ChakraLink,
+  Flex,
 } from '@chakra-ui/react';
 import {
   FiExternalLink,
@@ -168,18 +169,17 @@ export default function LinkRapidiPage() {
       <ClientLayout>
         <Box minH="100vh" p={{ base: 6, md: 10 }}>
           <VStack gap={8} align="stretch" maxW="1400px" mx="auto">
-            {/* Header */}
-            <VStack align="start" gap={3}>
-              <Heading size="2xl" fontWeight="black" bgGradient="linear(to-r, purple.600, pink.600)" bgClip="text">
-                Link Rapidi
-              </Heading>
-              <Heading size="lg" fontWeight="700" color="gray.900">
-                Link personalizzati
-              </Heading>
-              <Text fontSize="lg" color="gray.600">
-                Accedi rapidamente alle tue risorse e documenti personalizzati
-              </Text>
-            </VStack>
+            {/* Header: Titolo + Descrizione */}
+            <Flex justify="space-between" align="center">
+              <Box>
+                <Heading size="lg" fontWeight="700" color="gray.900">
+                  Link personalizzati
+                </Heading>
+                <Text fontSize="sm" color="gray.600" mt={1}>
+                  Accedi rapidamente alle tue risorse e documenti personalizzati
+                </Text>
+              </Box>
+            </Flex>
 
             {/* Content */}
             {loading ? (
