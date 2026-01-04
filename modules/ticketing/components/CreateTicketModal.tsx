@@ -31,6 +31,7 @@ import { Modal } from '@/components/Modal';
 import { Ticket, TicketStatus } from '../types';
 import { TicketPriority } from '../../../types/ticket';
 import axios from '@/utils/axios';
+import { upload } from '@vercel/blob/client';
 
 interface AxiosError {
   response?: {
@@ -181,22 +182,18 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
     setIsSubmitting(true);
 
     try {
-      // STEP 1: Upload file su Vercel Blob Storage
+      // STEP 1: Upload file direttamente su Vercel Blob Storage (client-side)
       const blobUrls: string[] = [];
       
       if (attachments.length > 0) {        
         for (const file of attachments) {
           try {
-            const fileFormData = new FormData();
-            fileFormData.append('file', file);
-            
-            const uploadResponse = await axios.post('/api/blob/upload', fileFormData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
+            const blob = await upload(file.name, file, {
+              access: 'public',
+              handleUploadUrl: '/api/blob/upload',
             });
             
-            if (uploadResponse.data.success) {
-              blobUrls.push(uploadResponse.data.url);
-            }
+            blobUrls.push(blob.url);
           } catch (uploadError) {
             console.error('Errore upload file su blob:', uploadError);
             toast.error(`Errore caricamento file: ${file.name}`);

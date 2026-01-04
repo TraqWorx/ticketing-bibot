@@ -45,6 +45,7 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { formatDueDate } from '../hooks/useTickets';
+import { upload } from '@vercel/blob/client';
 
 // Colore custom per badge priorità
 const getPriorityBg = (priority?: string) => {
@@ -378,21 +379,17 @@ export default function TicketDetailPage() {
                 type: 'audio/webm'
             });
 
-            // STEP 1: Upload su Vercel Blob Storage
-            const blobFormData = new FormData();
-            blobFormData.append('file', audioFile);
-            
-            const uploadResponse = await axios.post('/api/blob/upload', blobFormData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+            // STEP 1: Upload diretto su Vercel Blob Storage (client-side)            
+            const blob = await upload(audioFileName, audioFile, {
+                access: 'public',
+                handleUploadUrl: '/api/blob/upload',
             });
-            
-            const blobUrl = uploadResponse.data.url;
 
             // STEP 2: Invia solo l'URL al backend
             const response = await axios.post('/api/asana/create-story', {
                 taskGid: id as string,
                 text: `🎤 Nota vocale: ${audioFileName}`,
-                attachmentUrls: [blobUrl],
+                attachmentUrls: [blob.url],
             });
 
             setAudioBlob(null);
@@ -420,22 +417,18 @@ export default function TicketDetailPage() {
 
         setIsSubmitting(true);
         try {
-            // STEP 1: Upload file su Vercel Blob Storage
+            // STEP 1: Upload file direttamente su Vercel Blob Storage (client-side)
             const blobUrls: string[] = [];
             
             if (attachments.length > 0) {                
                 for (const file of attachments) {
                     try {
-                        const fileFormData = new FormData();
-                        fileFormData.append('file', file);
-                        
-                        const uploadResponse = await axios.post('/api/blob/upload', fileFormData, {
-                            headers: { 'Content-Type': 'multipart/form-data' },
+                        const blob = await upload(file.name, file, {
+                            access: 'public',
+                            handleUploadUrl: '/api/blob/upload',
                         });
                         
-                        if (uploadResponse.data.success) {
-                            blobUrls.push(uploadResponse.data.url);
-                        }
+                        blobUrls.push(blob.url);
                     } catch (uploadError) {
                         console.error('Errore upload file su blob:', uploadError);
                         toast.error(`Errore caricamento file: ${file.name}`);

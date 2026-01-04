@@ -1,31 +1,22 @@
 /**
  * API ENDPOINT: /api/blob/upload
  * 
- * Upload di file su Vercel Blob Storage (temporaneo)
+ * Genera token per upload client-side su Vercel Blob Storage
  * Utilizzato per bypassare il limite di 4.5MB delle function Vercel
  * 
  * FLUSSO:
- * 1. Riceve file dal frontend
- * 2. Carica su Vercel Blob Storage
- * 3. Restituisce URL del file
+ * 1. Riceve nome file dal frontend
+ * 2. Genera un token di upload temporaneo
+ * 3. Il client usa questo token per caricare direttamente
  * 
  * Method: POST
- * Body: FormData { file }
+ * Body: { filename: string }
  * 
- * Returns: { success, url, pathname }
+ * Returns: { url: string, token: string }
  */
 
-import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { IncomingForm } from 'formidable';
-import fs from 'fs/promises';
-
-// Disabilita body parser per gestire multipart/form-data
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -33,60 +24,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Parse multipart/form-data
-    const form = new IncomingForm({
-      multiples: false,
-      keepExtensions: true,
-      maxFileSize: 50 * 1024 * 1024, // 50MB per file
+    const body = req.body as HandleUploadBody;
+
+    const jsonResponse = await handleUpload({
+      body,
+      request: req,
+      onBeforeGenerateToken: async (pathname) => {
+        // Validazione opzionale: puoi controllare auth, limiti, etc
+        return {
+          allowedContentTypes: [
+            'image/*',
+            'video/*',
+            'audio/*',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain',
+          ],
+          tokenPayload: JSON.stringify({
+            uploadedAt: new Date().toISOString(),
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // Callback opzionale dopo upload completato
+        console.log('[Blob Upload] File caricato:', blob.url);
+      },
     });
 
-    const { files } = await new Promise<{ files: any }>((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        else resolve({ files });
-      });
-    });
-
-    // Formidable può restituire un array o un singolo file
-    let file = files.file;
-    if (Array.isArray(file)) {
-      file = file[0];
-    }
-
-    if (!file) {
-      return res.status(400).json({ message: 'Nessun file caricato' });
-    }
-
-    // Compatibilità con diverse versioni di formidable
-    const filePath = file.filepath || file.path;
-    if (!filePath) {
-      return res.status(400).json({ message: 'File path non valido' });
-    }
-
-    // Leggi il file
-    const fileStream = await fs.readFile(filePath);
-    
-    // Carica su Vercel Blob Storage
-    const blob = await put(file.originalFilename || file.name || 'attachment', fileStream, {
-      access: 'public',
-      addRandomSuffix: true,
-      contentType: file.mimetype || file.type || 'application/octet-stream',
-    });
-
-    // Elimina file temporaneo locale
-    await fs.unlink(filePath).catch(() => {});
-
-    return res.status(200).json({
-      success: true,
-      url: blob.url,
-      pathname: blob.pathname,
-    });
+    return res.status(200).json(jsonResponse);
 
   } catch (error: any) {
-    console.error('Errore upload blob:', error);
+    console.error('Errore generazione token blob:', error);
     return res.status(500).json({
-      success: false,
-      message: error.message || 'Errore durante l\'upload del file',
+      message: error.message || 'Errore durante la generazione del token',
     });
   }
 }
+
