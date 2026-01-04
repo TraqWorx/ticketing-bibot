@@ -371,9 +371,6 @@ export default function TicketDetailPage() {
 
         setIsSubmitting(true);
         try {
-            const formData = new FormData();
-            formData.append('taskGid', id as string);
-
             // Converti il blob in un File con nome appropriato
             const timestamp = Date.now();
             const audioFileName = `nota-vocale-${timestamp}.webm`;
@@ -381,13 +378,21 @@ export default function TicketDetailPage() {
                 type: 'audio/webm'
             });
 
-            formData.append('text', `🎤 Nota vocale: ${audioFileName}`);
-            formData.append('attachments', audioFile);
+            // STEP 1: Upload su Vercel Blob Storage
+            const blobFormData = new FormData();
+            blobFormData.append('file', audioFile);
+            
+            const uploadResponse = await axios.post('/api/blob/upload', blobFormData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            
+            const blobUrl = uploadResponse.data.url;
 
-            const response = await axios.post('/api/asana/create-story', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+            // STEP 2: Invia solo l'URL al backend
+            const response = await axios.post('/api/asana/create-story', {
+                taskGid: id as string,
+                text: `🎤 Nota vocale: ${audioFileName}`,
+                attachmentUrls: [blobUrl],
             });
 
             setAudioBlob(null);
@@ -415,18 +420,34 @@ export default function TicketDetailPage() {
 
         setIsSubmitting(true);
         try {
-            const formData = new FormData();
-            formData.append('taskGid', id as string);
-            formData.append('text', newComment);
+            // STEP 1: Upload file su Vercel Blob Storage
+            const blobUrls: string[] = [];
+            
+            if (attachments.length > 0) {                
+                for (const file of attachments) {
+                    try {
+                        const fileFormData = new FormData();
+                        fileFormData.append('file', file);
+                        
+                        const uploadResponse = await axios.post('/api/blob/upload', fileFormData, {
+                            headers: { 'Content-Type': 'multipart/form-data' },
+                        });
+                        
+                        if (uploadResponse.data.success) {
+                            blobUrls.push(uploadResponse.data.url);
+                        }
+                    } catch (uploadError) {
+                        console.error('Errore upload file su blob:', uploadError);
+                        toast.error(`Errore caricamento file: ${file.name}`);
+                    }
+                }
+            }
 
-            attachments.forEach((file) => {
-                formData.append('attachments', file);
-            });
-
-            const response = await axios.post('/api/asana/create-story', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+            // STEP 2: Invia solo i riferimenti URL al backend
+            const response = await axios.post('/api/asana/create-story', {
+                taskGid: id as string,
+                text: newComment,
+                attachmentUrls: blobUrls,
             });
 
             const result = response.data;

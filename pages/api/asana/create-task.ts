@@ -4,14 +4,16 @@
  * Crea un nuovo task su Asana per un ticket cliente con allegati
  * 
  * FLUSSO:
- * 1. Crea task su Asana
- * 2. Upload allegati
- * 3. Salva ticket su Firestore (tracking stato)
- * 4. Invia messaggi WhatsApp via GHL
- * 5. Invia webhook evento a GHL per automazioni
+ * 1. Riceve URL dei file da Vercel Blob Storage
+ * 2. Crea task su Asana
+ * 3. Scarica file dai Blob URL e carica su Asana
+ * 4. Elimina file da Blob Storage
+ * 5. Salva ticket su Firestore (tracking stato)
+ * 6. Invia messaggi WhatsApp via GHL
+ * 7. Invia webhook evento a GHL per automazioni
  * 
  * Method: POST
- * Body: FormData { title, description, creatorId, creatorName, creatorPhone, ghlContactId, attachments[] }
+ * Body: JSON { title, description, creatorId, creatorName, creatorPhone, ghlContactId, attachmentUrls[] }
  * 
  * Returns: { success, taskGid, taskUrl, attachmentsCount, whatsappErrors }
  */
@@ -20,16 +22,9 @@ import { createAsanaTask, uploadAsanaAttachment } from '@/lib/asana/asanaService
 import { withAuth } from '@/lib/auth-middleware';
 import { sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
 import { createTicket } from '@/lib/ticket/ticketService';
-import { IncomingForm } from 'formidable';
-import fs from 'fs/promises';
 import { NextApiRequest, NextApiResponse } from 'next';
-
-// Disabilita body parser di Next.js per gestire multipart/form-data
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+import axios from 'axios';
+import { del } from '@vercel/blob';
 
 export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
   // Solo POST
@@ -38,32 +33,17 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    // Parse multipart/form-data con formidable
-    const form = new IncomingForm({
-      multiples: true,
-      keepExtensions: true,
-      maxFileSize: 50 * 1024 * 1024, // 50MB per file
-      maxTotalFileSize: 100 * 1024 * 1024, // 100MB totali
-      maxFields: 1000,
-      maxFieldsSize: 10 * 1024 * 1024, // 10MB per i campi di testo
-    });
-
-    const { fields, files } = await new Promise<{ fields: any; files: any }>((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        else resolve({ fields, files });
-      });
-    });
-
-    // Estrai dati dal form
-    const title = Array.isArray(fields.title) ? fields.title[0] : fields.title;
-    const description = Array.isArray(fields.description) ? fields.description[0] : fields.description;
-    const priority = (Array.isArray(fields.priority) ? fields.priority[0] : fields.priority) as 'high' | 'medium' | 'low' || 'medium';
-    const creatorId = Array.isArray(fields.creatorId) ? fields.creatorId[0] : fields.creatorId;
-    const creatorName = Array.isArray(fields.creatorName) ? fields.creatorName[0] : fields.creatorName;
-    const creatorPhone = Array.isArray(fields.creatorPhone) ? fields.creatorPhone[0] : fields.creatorPhone;
-    const creatorEmail = Array.isArray(fields.creatorEmail) ? fields.creatorEmail[0] : fields.creatorEmail;
-    const ghlContactId = Array.isArray(fields.ghlContactId) ? fields.ghlContactId[0] : fields.ghlContactId;
+    const {
+      title,
+      description,
+      priority = 'medium',
+      creatorId,
+      creatorName,
+      creatorPhone,
+      creatorEmail,
+      ghlContactId,
+      attachmentUrls = [],
+    } = req.body;
 
     // Validazione input
     if (!title || typeof title !== 'string' || !title.trim()) {
@@ -90,7 +70,7 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
     const taskResult = await createAsanaTask({
       name: title,
       notes: description,
-      priority,
+      priority: priority as 'high' | 'medium' | 'low',
       creatorId,
       creatorName,
       creatorPhone,
@@ -100,41 +80,59 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
     const taskGid = taskResult.data.gid;
 
     let attachmentsUploaded = 0;
-    let totalAttachments = 0;
+    let totalAttachments = attachmentUrls.length;
+    const blobUrlsToDelete: string[] = [];
 
-    // STEP 3: Upload allegati se presenti (ciascuno con chiamata separata)
-    if (files.attachments) {
-      const attachmentFiles = Array.isArray(files.attachments)
-        ? files.attachments
-        : [files.attachments];
-
-      totalAttachments = attachmentFiles.length;
-
-      for (const file of attachmentFiles) {
+    // STEP 3: Scarica file da Blob Storage e carica su Asana
+    if (attachmentUrls && attachmentUrls.length > 0) {
+      for (const blobUrl of attachmentUrls) {
         try {
-          // Leggi file da temp path
-          const fileBuffer = await fs.readFile(file.filepath);
+          // Scarica file da Vercel Blob
+          const fileResponse = await axios.get(blobUrl, {
+            responseType: 'arraybuffer',
+          });
 
-          // Upload su Asana con chiamata POST separata
+          const fileBuffer = Buffer.from(fileResponse.data);
+          
+          // Estrai nome file dall'URL
+          const urlParts = blobUrl.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          
+          // Determina content-type
+          const contentType = fileResponse.headers['content-type'] || 'application/octet-stream';
+
+          // Upload su Asana
           await uploadAsanaAttachment(
             taskGid,
             fileBuffer,
-            file.originalFilename || 'attachment',
-            file.mimetype || undefined
+            filename,
+            contentType
           );
 
           attachmentsUploaded++;
+          blobUrlsToDelete.push(blobUrl);
 
-          // Elimina file temporaneo
-          await fs.unlink(file.filepath).catch(() => { });
         } catch (uploadError: any) {
-          console.error(`[create-task] Errore upload allegato ${file.originalFilename}:`, uploadError.message);
+          console.error(`[create-task] Errore upload allegato da ${blobUrl}:`, uploadError.message);
           // Continua con gli altri file anche se uno fallisce
+          blobUrlsToDelete.push(blobUrl); // Elimina comunque il blob
         }
       }
     }
 
-    // STEP 4: Salva ticket su Firestore per tracking stato
+    // STEP 4: Elimina file da Blob Storage
+    if (blobUrlsToDelete.length > 0) {
+      try {
+        console.log(`[create-task] Eliminazione ${blobUrlsToDelete.length} file da Blob Storage...`);
+        await del(blobUrlsToDelete);
+        console.log('[create-task] File eliminati con successo da Blob Storage');
+      } catch (deleteError: any) {
+        console.error('[create-task] Errore eliminazione blob:', deleteError.message);
+        // Non blocchiamo il flusso
+      }
+    }
+
+    // STEP 5: Salva ticket su Firestore per tracking stato
     let firestoreTicketCreated = false;
     try {
       await createTicket({
@@ -154,7 +152,7 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
       // Non blocchiamo il flusso - il ticket è già creato su Asana
     }
 
-    // STEP 5: Invia webhook evento a GHL per automazioni
+    // STEP 6: Invia webhook evento a GHL per automazioni
     let webhookSent = false;
     if (ghlContactId) {
       const [firstName, ...lastNameParts] = creatorName.split(' ');
@@ -164,7 +162,7 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
         ghlContactId,
         ticketId: taskGid,
         title,
-        priority,
+        priority: priority as 'high' | 'medium' | 'low',
         firstName,
         lastName,
         clientPhone: creatorPhone,

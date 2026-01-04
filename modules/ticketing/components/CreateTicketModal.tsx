@@ -181,29 +181,45 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
     setIsSubmitting(true);
 
     try {
-      // Prepara FormData per includere file
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('priority', formData.priority);
-      formDataToSend.append('creatorId', ticketCreator.id);
-      formDataToSend.append('creatorName', `${ticketCreator.firstName} ${ticketCreator.lastName}`);
-      formDataToSend.append('creatorPhone', ticketCreator.phone);
-      formDataToSend.append('creatorEmail', ticketCreator.email);
-      formDataToSend.append('ghlContactId', ticketCreator.ghl_contact_id);
+      // STEP 1: Upload file su Vercel Blob Storage
+      const blobUrls: string[] = [];
+      
+      if (attachments.length > 0) {        
+        for (const file of attachments) {
+          try {
+            const fileFormData = new FormData();
+            fileFormData.append('file', file);
+            
+            const uploadResponse = await axios.post('/api/blob/upload', fileFormData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            
+            if (uploadResponse.data.success) {
+              blobUrls.push(uploadResponse.data.url);
+            }
+          } catch (uploadError) {
+            console.error('Errore upload file su blob:', uploadError);
+            toast.error(`Errore caricamento file: ${file.name}`);
+          }
+        }
+      }
 
-      // Aggiungi tutti gli allegati
-      attachments.forEach((file) => {
-        formDataToSend.append('attachments', file);
-      });
+      // STEP 2: Invia solo i riferimenti URL al backend
+      const requestData = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        creatorId: ticketCreator.id,
+        creatorName: `${ticketCreator.firstName} ${ticketCreator.lastName}`,
+        creatorPhone: ticketCreator.phone,
+        creatorEmail: ticketCreator.email,
+        ghlContactId: ticketCreator.ghl_contact_id,
+        attachmentUrls: blobUrls, // Invia solo gli URL
+      };
 
       // Chiamata API per creare task su Asana
       try {
-        const response = await axios.post('/api/asana/create-task', formDataToSend, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        const response = await axios.post('/api/asana/create-task', requestData);
 
         const result = response.data;
 
