@@ -114,25 +114,18 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
 
         } catch (uploadError: any) {
           console.error(`[create-task] Errore upload allegato da ${blobUrl}:`, uploadError.message);
+          console.error('[create-task] Stack trace:', uploadError.stack);
+          if (uploadError.response) {
+            console.error('[create-task] Response status:', uploadError.response.status);
+            console.error('[create-task] Response data:', uploadError.response.data);
+          }
           // Continua con gli altri file anche se uno fallisce
           blobUrlsToDelete.push(blobUrl); // Elimina comunque il blob
         }
       }
     }
 
-    // STEP 4: Elimina file da Blob Storage
-    if (blobUrlsToDelete.length > 0) {
-      try {
-        console.log(`[create-task] Eliminazione ${blobUrlsToDelete.length} file da Blob Storage...`);
-        await del(blobUrlsToDelete);
-        console.log('[create-task] File eliminati con successo da Blob Storage');
-      } catch (deleteError: any) {
-        console.error('[create-task] Errore eliminazione blob:', deleteError.message);
-        // Non blocchiamo il flusso
-      }
-    }
-
-    // STEP 5: Salva ticket su Firestore per tracking stato
+    // STEP 4: Salva ticket su Firestore per tracking stato
     let firestoreTicketCreated = false;
     try {
       await createTicket({
@@ -150,6 +143,16 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
     } catch (firestoreError: any) {
       console.error('[create-task] Errore salvataggio Firestore:', firestoreError.message);
       // Non blocchiamo il flusso - il ticket è già creato su Asana
+    }
+
+    // STEP 5: Elimina file da Blob Storage DOPO aver completato tutte le operazioni
+    if (blobUrlsToDelete.length > 0) {
+      try {
+        await del(blobUrlsToDelete);
+      } catch (deleteError: any) {
+        console.error('[create-task] Errore eliminazione blob:', deleteError.message);
+        // Non blocchiamo il flusso
+      }
     }
 
     // STEP 6: Invia webhook evento a GHL per automazioni

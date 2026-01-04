@@ -188,7 +188,13 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
       if (attachments.length > 0) {        
         for (const file of attachments) {
           try {
-            const blob = await upload(file.name, file, {
+            // Genera nome file univoco per evitare conflitti
+            const randomSuffix = Math.random().toString(36).substring(2, 15);
+            const fileExtension = file.name.match(/\.[^/.]+$/)?.[0] || '';
+            const baseName = file.name.replace(/\.[^/.]+$/, '');
+            const uniqueFileName = `${baseName}_${randomSuffix}${fileExtension}`;
+            
+            const blob = await upload(uniqueFileName, file, {
               access: 'public',
               handleUploadUrl: '/api/blob/upload',
             });

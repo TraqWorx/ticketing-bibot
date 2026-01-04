@@ -46,10 +46,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }),
         };
       },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // Callback opzionale dopo upload completato
-        console.log('[Blob Upload] File caricato:', blob.url);
-      },
     });
 
     return res.status(200).json(jsonResponse);

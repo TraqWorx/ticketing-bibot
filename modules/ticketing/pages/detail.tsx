@@ -380,10 +380,23 @@ export default function TicketDetailPage() {
             });
 
             // STEP 1: Upload diretto su Vercel Blob Storage (client-side)            
-            const blob = await upload(audioFileName, audioFile, {
+            // Genera nome file univoco per evitare conflitti
+            const randomSuffix = Math.random().toString(36).substring(2, 15);
+            const uniqueAudioFileName = `${audioFileName.replace(/\.[^/.]+$/, '')}_${randomSuffix}${audioFileName.match(/\.[^/.]+$/)?.[0] || ''}`;
+            
+            const blob = await upload(uniqueAudioFileName, audioFile, {
                 access: 'public',
                 handleUploadUrl: '/api/blob/upload',
             });
+
+            // Verifica immediatamente che il file sia accessibile
+            try {
+                const testResponse = await axios.head(blob.url);
+            } catch (testError: any) {
+                console.error('[Frontend] ❌ File NON accessibile subito dopo upload!', testError.response?.status);
+                toast.error('Errore: file caricato ma non accessibile');
+                return;
+            }
 
             // STEP 2: Invia solo l'URL al backend
             const response = await axios.post('/api/asana/create-story', {
@@ -391,7 +404,7 @@ export default function TicketDetailPage() {
                 text: `🎤 Nota vocale: ${audioFileName}`,
                 attachmentUrls: [blob.url],
             });
-
+            
             setAudioBlob(null);
             setRecordingTime(0);
             await Promise.all([loadComments(), loadTaskDetail()]);
@@ -423,7 +436,13 @@ export default function TicketDetailPage() {
             if (attachments.length > 0) {                
                 for (const file of attachments) {
                     try {
-                        const blob = await upload(file.name, file, {
+                        // Genera nome file univoco per evitare conflitti
+                        const randomSuffix = Math.random().toString(36).substring(2, 15);
+                        const fileExtension = file.name.match(/\.[^/.]+$/)?.[0] || '';
+                        const baseName = file.name.replace(/\.[^/.]+$/, '');
+                        const uniqueFileName = `${baseName}_${randomSuffix}${fileExtension}`;
+                        
+                        const blob = await upload(uniqueFileName, file, {
                             access: 'public',
                             handleUploadUrl: '/api/blob/upload',
                         });
@@ -447,7 +466,7 @@ export default function TicketDetailPage() {
 
             if (result.attachmentErrors && result.attachmentErrors > 0) {
                 toast.warning(
-                    `Commento aggiunto, ma ${result.attachmentErrors} allegato/i non caricato/i.`,
+                    `Commento aggiunto, ma allegati non caricati.`,
                     { autoClose: 5000 }
                 );
             }

@@ -58,10 +58,11 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (attachmentUrls && attachmentUrls.length > 0) {
       for (const blobUrl of attachmentUrls) {
-        try {
+        try {          
           // Scarica file da Vercel Blob
           const fileResponse = await axios.get(blobUrl, {
             responseType: 'arraybuffer',
+            timeout: 30000, // 30 secondi timeout
           });
 
           const fileBuffer = Buffer.from(fileResponse.data);
@@ -103,7 +104,25 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
           }
 
         } catch (uploadError: any) {
-          console.error(`[create-story] Errore upload allegato da ${blobUrl}:`, uploadError.message);
+          console.error(`[create-story] ========== ERRORE UPLOAD ALLEGATO ==========`);
+          console.error(`[create-story] URL Blob: ${blobUrl}`);
+          console.error(`[create-story] Errore tipo:`, typeof uploadError);
+          console.error(`[create-story] Errore messaggio:`, uploadError.message || 'Nessun messaggio');
+          console.error(`[create-story] Errore completo:`, JSON.stringify(uploadError, null, 2));
+          
+          if (uploadError.response) {
+            console.error('[create-story] HTTP Response status:', uploadError.response.status);
+            console.error('[create-story] HTTP Response headers:', uploadError.response.headers);
+            console.error('[create-story] HTTP Response data:', uploadError.response.data);
+          }
+          
+          if (uploadError.code) {
+            console.error('[create-story] Error code:', uploadError.code);
+          }
+          
+          console.error('[create-story] Stack trace:', uploadError.stack);
+          console.error(`[create-story] ========================================`);
+          
           blobUrlsToDelete.push(blobUrl); // Elimina comunque il blob
         }
       }
@@ -125,12 +144,10 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
     // Commento creato per risposta del cliente
     const result = await createTaskStory(taskGid, commentText, true);
 
-    // STEP 4: Elimina file da Blob Storage
+    // STEP 4: Elimina file da Blob Storage DOPO aver creato la storia
     if (blobUrlsToDelete.length > 0) {
       try {
-        console.log(`[create-story] Eliminazione ${blobUrlsToDelete.length} file da Blob Storage...`);
         await del(blobUrlsToDelete);
-        console.log('[create-story] File eliminati con successo da Blob Storage');
       } catch (deleteError: any) {
         console.error('[create-story] Errore eliminazione blob:', deleteError.message);
         // Non blocchiamo il flusso
@@ -175,7 +192,7 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
       firestoreUpdated,
       webhookSent,
       message: attachmentsUploaded > 0
-        ? `Commento aggiunto con ${attachmentsUploaded} allegato/i`
+        ? `Commento e allegati aggiunti`
         : 'Commento aggiunto con successo',
     });
   } catch (error: any) {
