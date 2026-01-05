@@ -107,6 +107,7 @@ export default function TicketDetailPage() {
     const [attachments, setAttachments] = useState<File[]>([]);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [showExpandButton, setShowExpandButton] = useState(false);
+    const [isAttachmentsExpanded, setIsAttachmentsExpanded] = useState(false);
     const descriptionRef = useRef<HTMLDivElement>(null);
     const commentsEndRef = useRef<HTMLDivElement>(null);
 
@@ -826,7 +827,7 @@ export default function TicketDetailPage() {
                                         Allegati ({taskDetail.attachments.length})
                                     </Text>
                                     <VStack gap={2} align="stretch">
-                                        {taskDetail.attachments.map((attachment: any, index: number) => (
+                                        {(isAttachmentsExpanded ? taskDetail.attachments : taskDetail.attachments.slice(0, 3)).map((attachment: any, index: number) => (
                                             <HStack
                                                 key={attachment.gid}
                                                 px={4}
@@ -867,6 +868,33 @@ export default function TicketDetailPage() {
                                                 <Icon as={FiChevronRight} color="gray.400" boxSize="16px" />
                                             </HStack>
                                         ))}
+                                        
+                                        {/* Pulsante mostra tutto/mostra meno per allegati */}
+                                        {taskDetail.attachments.length > 3 && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                color="blue.500"
+                                                fontSize="sm"
+                                                fontWeight="600"
+                                                onClick={() => setIsAttachmentsExpanded(!isAttachmentsExpanded)}
+                                                mt={1}
+                                            >
+                                                <HStack gap={2}>
+                                                    <span>
+                                                        {isAttachmentsExpanded
+                                                            ? (isMobile ? 'Mostra meno' : 'Mostra meno')
+                                                            : `Mostra tutti (${taskDetail.attachments.length - 3} nascosti)`
+                                                        }
+                                                    </span>
+                                                    <Icon
+                                                        as={FiChevronRight}
+                                                        transform={isAttachmentsExpanded ? 'rotate(-90deg)' : 'rotate(90deg)'}
+                                                        transition="transform 0.2s"
+                                                    />
+                                                </HStack>
+                                            </Button>
+                                        )}
                                     </VStack>
                                 </Box>
                             )}
