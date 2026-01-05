@@ -54,10 +54,9 @@
  * TEST: POST /api/webhooks/asana/test con payload di esempio
  */
 
-import { sendTicketCompletedEvent, sendTicketReopenedEvent, sendTicketRepliedByAdminEvent, sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
-import { triggerN8NClientResponseFollowup } from '@/lib/n8n/n8nService';
-import { closeTicket, getTicket, reopenTicket, updateTicketOnReply, updateTicket, createTicket, getUserById, deleteTicket } from '@/lib/ticket/ticketService';
 import { getStory, getTaskDetail } from '@/lib/asana/asanaService';
+import { sendTicketCompletedEvent, sendTicketCreatedEvent, sendTicketReopenedEvent, sendTicketRepliedByAdminEvent } from '@/lib/ghl/ghlService';
+import { closeTicket, createTicket, deleteTicket, getTicket, getUserById, reopenTicket, updateTicket, updateTicketOnReply } from '@/lib/ticket/ticketService';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 // Disabilita body parser per ricevere raw body
@@ -225,17 +224,6 @@ async function handleNewStory(event: any): Promise<void> {
         clientId: ticket.clientId,
         ghlContactId: ticket.ghlContactId,
         ticketId: taskGid,
-      });
-
-      // Invia evento a N8N per automazione solleciti (24h, 48h, 72h)
-      await triggerN8NClientResponseFollowup({
-        clientId: ticket.clientId,
-        ghlContactId: ticket.ghlContactId,
-        ticketId: taskGid,
-        clientName: ticket.clientName,
-        clientPhone: ticket.clientPhone,
-        clientEmail: ticket.clientEmail,
-        priority: ticket.priority,
       });
     }
   } catch (error: any) {
