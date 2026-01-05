@@ -45,6 +45,7 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { formatDueDate } from '../hooks/useTickets';
+import { upload } from '@vercel/blob/client';
 
 // Colore custom per badge priorità
 const getPriorityBg = (priority?: string) => {
@@ -106,6 +107,7 @@ export default function TicketDetailPage() {
     const [attachments, setAttachments] = useState<File[]>([]);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [showExpandButton, setShowExpandButton] = useState(false);
+    const [isAttachmentsExpanded, setIsAttachmentsExpanded] = useState(false);
     const descriptionRef = useRef<HTMLDivElement>(null);
     const commentsEndRef = useRef<HTMLDivElement>(null);
 
@@ -371,9 +373,6 @@ export default function TicketDetailPage() {
 
         setIsSubmitting(true);
         try {
-            const formData = new FormData();
-            formData.append('taskGid', id as string);
-
             // Converti il blob in un File con nome appropriato
             const timestamp = Date.now();
             const audioFileName = `nota-vocale-${timestamp}.webm`;
@@ -381,15 +380,32 @@ export default function TicketDetailPage() {
                 type: 'audio/webm'
             });
 
-            formData.append('text', `🎤 Nota vocale: ${audioFileName}`);
-            formData.append('attachments', audioFile);
-
-            const response = await axios.post('/api/asana/create-story', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+            // STEP 1: Upload diretto su Vercel Blob Storage (client-side)            
+            // Genera nome file univoco per evitare conflitti
+            const randomSuffix = Math.random().toString(36).substring(2, 15);
+            const uniqueAudioFileName = `${audioFileName.replace(/\.[^/.]+$/, '')}_${randomSuffix}${audioFileName.match(/\.[^/.]+$/)?.[0] || ''}`;
+            
+            const blob = await upload(uniqueAudioFileName, audioFile, {
+                access: 'public',
+                handleUploadUrl: '/api/blob/upload',
             });
 
+            // Verifica immediatamente che il file sia accessibile
+            try {
+                const testResponse = await axios.head(blob.url);
+            } catch (testError: any) {
+                console.error('[Frontend] ❌ File NON accessibile subito dopo upload!', testError.response?.status);
+                toast.error('Errore: file caricato ma non accessibile');
+                return;
+            }
+
+            // STEP 2: Invia solo l'URL al backend
+            const response = await axios.post('/api/asana/create-story', {
+                taskGid: id as string,
+                text: `🎤 Nota vocale: ${audioFileName}`,
+                attachmentUrls: [blob.url],
+            });
+            
             setAudioBlob(null);
             setRecordingTime(0);
             await Promise.all([loadComments(), loadTaskDetail()]);
@@ -415,25 +431,43 @@ export default function TicketDetailPage() {
 
         setIsSubmitting(true);
         try {
-            const formData = new FormData();
-            formData.append('taskGid', id as string);
-            formData.append('text', newComment);
+            // STEP 1: Upload file direttamente su Vercel Blob Storage (client-side)
+            const blobUrls: string[] = [];
+            
+            if (attachments.length > 0) {                
+                for (const file of attachments) {
+                    try {
+                        // Genera nome file univoco per evitare conflitti
+                        const randomSuffix = Math.random().toString(36).substring(2, 15);
+                        const fileExtension = file.name.match(/\.[^/.]+$/)?.[0] || '';
+                        const baseName = file.name.replace(/\.[^/.]+$/, '');
+                        const uniqueFileName = `${baseName}_${randomSuffix}${fileExtension}`;
+                        
+                        const blob = await upload(uniqueFileName, file, {
+                            access: 'public',
+                            handleUploadUrl: '/api/blob/upload',
+                        });
+                        
+                        blobUrls.push(blob.url);
+                    } catch (uploadError) {
+                        console.error('Errore upload file su blob:', uploadError);
+                        toast.error(`Errore caricamento file: ${file.name}`);
+                    }
+                }
+            }
 
-            attachments.forEach((file) => {
-                formData.append('attachments', file);
-            });
-
-            const response = await axios.post('/api/asana/create-story', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+            // STEP 2: Invia solo i riferimenti URL al backend
+            const response = await axios.post('/api/asana/create-story', {
+                taskGid: id as string,
+                text: newComment,
+                attachmentUrls: blobUrls,
             });
 
             const result = response.data;
 
             if (result.attachmentErrors && result.attachmentErrors > 0) {
                 toast.warning(
-                    `Commento aggiunto, ma ${result.attachmentErrors} allegato/i non caricato/i.`,
+                    `Commento aggiunto, ma allegati non caricati.`,
                     { autoClose: 5000 }
                 );
             }
@@ -793,7 +827,7 @@ export default function TicketDetailPage() {
                                         Allegati ({taskDetail.attachments.length})
                                     </Text>
                                     <VStack gap={2} align="stretch">
-                                        {taskDetail.attachments.map((attachment: any, index: number) => (
+                                        {(isAttachmentsExpanded ? taskDetail.attachments : taskDetail.attachments.slice(0, 3)).map((attachment: any, index: number) => (
                                             <HStack
                                                 key={attachment.gid}
                                                 px={4}
@@ -834,6 +868,33 @@ export default function TicketDetailPage() {
                                                 <Icon as={FiChevronRight} color="gray.400" boxSize="16px" />
                                             </HStack>
                                         ))}
+                                        
+                                        {/* Pulsante mostra tutto/mostra meno per allegati */}
+                                        {taskDetail.attachments.length > 3 && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                color="blue.500"
+                                                fontSize="sm"
+                                                fontWeight="600"
+                                                onClick={() => setIsAttachmentsExpanded(!isAttachmentsExpanded)}
+                                                mt={1}
+                                            >
+                                                <HStack gap={2}>
+                                                    <span>
+                                                        {isAttachmentsExpanded
+                                                            ? (isMobile ? 'Mostra meno' : 'Mostra meno')
+                                                            : `Mostra tutti (${taskDetail.attachments.length - 3} nascosti)`
+                                                        }
+                                                    </span>
+                                                    <Icon
+                                                        as={FiChevronRight}
+                                                        transform={isAttachmentsExpanded ? 'rotate(-90deg)' : 'rotate(90deg)'}
+                                                        transition="transform 0.2s"
+                                                    />
+                                                </HStack>
+                                            </Button>
+                                        )}
                                     </VStack>
                                 </Box>
                             )}

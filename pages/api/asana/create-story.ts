@@ -4,14 +4,16 @@
  * Crea un nuovo commento su un task Asana con allegati
  * 
  * FLUSSO:
- * 1. Crea commento su Asana
- * 2. Upload allegati
- * 3. Aggiorna stato ticket su Firestore
- * 4. Invia messaggio notifica all'admin
- * 5. Invia webhook evento a GHL per automazioni
+ * 1. Riceve URL dei file da Vercel Blob Storage
+ * 2. Scarica file da Blob e carica su Asana
+ * 3. Crea commento su Asana
+ * 4. Elimina file da Blob Storage
+ * 5. Aggiorna stato ticket su Firestore
+ * 6. Invia messaggio notifica all'admin
+ * 7. Invia webhook evento a GHL per automazioni
  * 
  * Method: POST
- * Body: FormData { taskGid, text, attachments[] }
+ * Body: JSON { taskGid, text, attachmentUrls[] }
  * 
  * Returns: { success, data: story, attachmentsCount, attachmentErrors }
  */
@@ -21,16 +23,9 @@ import { withAuth } from '@/lib/auth-middleware';
 import { sendTicketRepliedByClientEvent } from '@/lib/ghl/ghlService';
 import { transcribeAudioWithWhisper } from '@/lib/openaiWhisper';
 import { getTicket, updateTicketOnReply } from '@/lib/ticket/ticketService';
-import { IncomingForm } from 'formidable';
-import fs from 'fs/promises';
 import { NextApiRequest, NextApiResponse } from 'next';
-
-// Disabilita body parser di Next.js per gestire multipart/form-data
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+import axios from 'axios';
+import { del } from '@vercel/blob';
 
 export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
   // Solo POST
@@ -39,26 +34,11 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    // Parse multipart/form-data con formidable
-    const form = new IncomingForm({
-      multiples: true,
-      keepExtensions: true,
-      maxFileSize: 50 * 1024 * 1024, // 50MB per file
-      maxTotalFileSize: 100 * 1024 * 1024, // 100MB totali
-      maxFields: 1000,
-      maxFieldsSize: 10 * 1024 * 1024, // 10MB per i campi di testo
-    });
-
-    const { fields, files } = await new Promise<{ fields: any; files: any }>((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        else resolve({ fields, files });
-      });
-    });
-
-    // Estrai dati dal form
-    const taskGid = Array.isArray(fields.taskGid) ? fields.taskGid[0] : fields.taskGid;
-    const text = Array.isArray(fields.text) ? fields.text[0] : fields.text;
+    const {
+      taskGid,
+      text,
+      attachmentUrls = [],
+    } = req.body;
 
     // Validazione
     if (!taskGid || typeof taskGid !== 'string') {
@@ -69,70 +49,112 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ message: 'Il testo del commento è obbligatorio' });
     }
 
-
-    // STEP 1+2: Se c'è un vocale, trascrivi e allega
+    // STEP 1+2: Scarica file da Blob Storage e carica su Asana
     let attachmentsUploaded = 0;
-    let totalAttachments = 0;
+    let totalAttachments = attachmentUrls.length;
     const audioSummaries: string[] = [];
     const attachmentNames: string[] = [];
+    const blobUrlsToDelete: string[] = [];
 
-    if (files.attachments) {
-      const attachmentFiles = Array.isArray(files.attachments)
-        ? files.attachments
-        : [files.attachments];
-      totalAttachments = attachmentFiles.length;
-      for (const file of attachmentFiles) {
-        try {
-          const fileBuffer = await fs.readFile(file.filepath);
-          let summary = '';
-          // Raccogli il nome del file per il messaggio
-          attachmentNames.push(file.originalFilename || 'file_senza_nome');
+    if (attachmentUrls && attachmentUrls.length > 0) {
+      for (const blobUrl of attachmentUrls) {
+        try {          
+          // Scarica file da Vercel Blob
+          const fileResponse = await axios.get(blobUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000, // 30 secondi timeout
+          });
+
+          const fileBuffer = Buffer.from(fileResponse.data);
+          
+          // Estrai nome file dall'URL
+          const urlParts = blobUrl.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          
+          // Determina content-type
+          const contentType = fileResponse.headers['content-type'] || 'application/octet-stream';
+
+          attachmentNames.push(filename);
+
           // Upload su Asana
-          let uploaded = await uploadAsanaAttachment(
+          await uploadAsanaAttachment(
             taskGid,
             fileBuffer,
-            file.originalFilename || 'attachment',
-            file.mimetype || undefined
+            filename,
+            contentType
           );
+
           attachmentsUploaded++;
-          // Se è audio, trascrivi e aggiungi summary (sempre, anche se transcript fallisce)
-          if (file.mimetype && file.mimetype.startsWith('audio')) {
+          blobUrlsToDelete.push(blobUrl);
+
+          // Se è audio, trascrivi
+          if (contentType && contentType.startsWith('audio')) {
             let transcript = '';
             try {
-              transcript = await transcribeAudioWithWhisper(fileBuffer, file.originalFilename || 'audio.wav');
+              transcript = await transcribeAudioWithWhisper(fileBuffer, filename);
             } catch (err) {
               transcript = '';
               console.error('[Whisper error]', err);
             }
             if (transcript && transcript.trim()) {
-              summary = `🎤 Nota vocale: ${file.originalFilename || 'audio'}\nTrascrizione:\n${transcript}`;
+              audioSummaries.push(`🎤 Nota vocale: ${filename}\nTrascrizione:\n${transcript}`);
             } else {
-              summary = `🎤 Nota vocale: ${file.originalFilename || 'audio'}`;
+              audioSummaries.push(`🎤 Nota vocale: ${filename}`);
             }
-            audioSummaries.push(summary);
           }
-          await fs.unlink(file.filepath).catch(() => { });
+
         } catch (uploadError: any) {
-          console.error(`[create-story] Errore upload allegato ${file.originalFilename}:`, uploadError.message);
+          console.error(`[create-story] ========== ERRORE UPLOAD ALLEGATO ==========`);
+          console.error(`[create-story] URL Blob: ${blobUrl}`);
+          console.error(`[create-story] Errore tipo:`, typeof uploadError);
+          console.error(`[create-story] Errore messaggio:`, uploadError.message || 'Nessun messaggio');
+          console.error(`[create-story] Errore completo:`, JSON.stringify(uploadError, null, 2));
+          
+          if (uploadError.response) {
+            console.error('[create-story] HTTP Response status:', uploadError.response.status);
+            console.error('[create-story] HTTP Response headers:', uploadError.response.headers);
+            console.error('[create-story] HTTP Response data:', uploadError.response.data);
+          }
+          
+          if (uploadError.code) {
+            console.error('[create-story] Error code:', uploadError.code);
+          }
+          
+          console.error('[create-story] Stack trace:', uploadError.stack);
+          console.error(`[create-story] ========================================`);
+          
+          blobUrlsToDelete.push(blobUrl); // Elimina comunque il blob
         }
       }
     }
 
-    // STEP 1: Crea commento su Asana
+    // STEP 3: Crea commento su Asana
     let commentText = text;
     if (audioSummaries.length > 0) {
       commentText = audioSummaries.join('\n\n');
     }
 
     // Aggiungi l'elenco degli allegati al messaggio se presenti
-    if (attachmentNames.length > 0) {
+    // Ma non se si tratta solo di note vocali (il nome è già nel testo)
+    const hasNonAudioAttachments = attachmentNames.length > audioSummaries.length;
+    if (hasNonAudioAttachments) {
       commentText += '\n\n📎 Allegati:\n' + attachmentNames.map(name => `• ${name}`).join('\n');
     }
 
     // Commento creato per risposta del cliente
     const result = await createTaskStory(taskGid, commentText, true);
 
-    // STEP 3: Aggiorna stato ticket su Firestore (client ha risposto)
+    // STEP 4: Elimina file da Blob Storage DOPO aver creato la storia
+    if (blobUrlsToDelete.length > 0) {
+      try {
+        await del(blobUrlsToDelete);
+      } catch (deleteError: any) {
+        console.error('[create-story] Errore eliminazione blob:', deleteError.message);
+        // Non blocchiamo il flusso
+      }
+    }
+
+    // STEP 5: Aggiorna stato ticket su Firestore (client ha risposto)
     let firestoreUpdated = false;
     let ticket = null;
     try {
@@ -170,7 +192,7 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
       firestoreUpdated,
       webhookSent,
       message: attachmentsUploaded > 0
-        ? `Commento aggiunto con ${attachmentsUploaded} allegato/i`
+        ? `Commento e allegati aggiunti`
         : 'Commento aggiunto con successo',
     });
   } catch (error: any) {
