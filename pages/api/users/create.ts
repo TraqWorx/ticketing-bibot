@@ -19,6 +19,7 @@ interface CreateUserBody {
   firstName: string;
   lastName: string;
   phone: string;
+  company: string;
 }
 
 // Genera link di reset password e invia webhook a GHL per email custom
@@ -71,7 +72,7 @@ async function handler(
   }
 
   try {
-    const { email, firstName, lastName, phone } = req.body as CreateUserBody;
+    const { email, firstName, lastName, phone, company } = req.body as CreateUserBody;
 
     // Validazione input
     if (!email || !firstName || !lastName) {
@@ -117,6 +118,7 @@ async function handler(
       firstName,
       lastName,
       phone: phone || '',
+      company: company || '',
       role: UserRole.CLIENT,
       isActive: true,
       createdAt: new Date().toISOString(),

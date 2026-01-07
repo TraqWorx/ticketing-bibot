@@ -36,7 +36,7 @@ import axios from '@/utils/axios';
 
 interface EditUserFormProps {
     user: User;
-    onSubmit: (data: { firstName: string; lastName: string; phone: string; ghl_contact_id: string }, customLinks: CustomLink[]) => Promise<void>;
+    onSubmit: (data: { firstName: string; lastName: string; phone: string; ghl_contact_id: string; company: string }, customLinks: CustomLink[]) => Promise<void>;
     onCancel?: () => void;
 }
 
@@ -46,6 +46,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
         lastName: user.lastName,
         phone: user.phone,
         ghl_contact_id: user.ghl_contact_id,
+        company: user.company || '',
     });
 
     const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
@@ -121,7 +122,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
     };
 
     const updateCustomLink = (id: string, field: 'label' | 'url', value: string) => {
-        setCustomLinks(customLinks.map(link => 
+        setCustomLinks(customLinks.map(link =>
             link.id === id ? { ...link, [field]: value, updatedAt: new Date() } : link
         ));
     };
@@ -129,21 +130,6 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
     return (
         <form onSubmit={handleSubmit}>
             <VStack gap={4} align="stretch">
-                {/* Email (readonly) */}
-                <Box>
-                    <Text fontSize="sm" fontWeight="medium" mb={1} color="gray.600">Email</Text>
-                    <Input
-                        type="email"
-                        value={user.email}
-                        readOnly
-                        bg="gray.100"
-                        color="gray.600"
-                        cursor="not-allowed"
-                    />
-                    <Text fontSize="xs" color="gray.500" mt={1}>
-                        L'email non è modificabile
-                    </Text>
-                </Box>
 
                 {/* Nome e Cognome */}
                 <HStack gap={4} align="start">
@@ -174,6 +160,22 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                     </Box>
                 </HStack>
 
+                {/* Email (readonly) */}
+                <Box>
+                    <Text fontSize="sm" fontWeight="medium" mb={1} color="gray.600">Email</Text>
+                    <Input
+                        type="email"
+                        value={user.email}
+                        readOnly
+                        bg="gray.100"
+                        color="gray.600"
+                        cursor="not-allowed"
+                    />
+                    <Text fontSize="xs" color="gray.500" mt={1}>
+                        L'email non è modificabile
+                    </Text>
+                </Box>
+
                 {/* Telefono (readonly) */}
                 <Box>
                     <Text fontSize="sm" fontWeight="medium" mb={1} color="gray.600">Telefono</Text>
@@ -188,6 +190,20 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                     <Text fontSize="xs" color="gray.500" mt={1}>
                         Il telefono non è modificabile
                     </Text>
+                </Box>
+
+                {/* Company */}
+                <Box>
+                    <Text fontSize="sm" fontWeight="medium" mb={1}>Azienda</Text>
+                    <Input
+                        value={formData.company}
+                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                        placeholder="Nome dell'azienda"
+                        borderColor={errors.company ? 'red.500' : 'gray.200'}
+                    />
+                    {errors.company && (
+                        <Text color="red.500" fontSize="sm" mt={1}>{errors.company}</Text>
+                    )}
                 </Box>
 
                 {/* GoHighLevel Contact ID */}
@@ -210,7 +226,7 @@ export const EditUserForm = ({ user, onSubmit, onCancel }: EditUserFormProps) =>
                 {/* Custom Links Section */}
                 <Box mt={6}>
                     <Separator mb={6} />
-                    
+
                     <HStack justify="space-between" mb={4}>
                         <HStack gap={2}>
                             <FiLink />

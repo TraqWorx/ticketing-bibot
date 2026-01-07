@@ -19,6 +19,7 @@ interface UpdateUserRequest {
   lastName: string;
   phone: string;
   ghl_contact_id: string;
+  company: string;
 }
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -27,7 +28,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const { userId, firstName, lastName, phone, ghl_contact_id } = req.body as UpdateUserRequest;
+    const { userId, firstName, lastName, phone, ghl_contact_id, company } = req.body as UpdateUserRequest;
 
     // Validazione input
     if (!userId || !firstName || !lastName || !phone || !ghl_contact_id) {
@@ -52,6 +53,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       lastName,
       phone,
       ghl_contact_id,
+      company,
       updatedAt: new Date(),
     });
 
