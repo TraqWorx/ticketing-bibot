@@ -42,6 +42,7 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
         lastName: '',
         email: '',
         phone: '',
+        company: '',
     });
 
     const [customLinks, setCustomLinks] = useState<CreateCustomLinkInput[]>([]);
@@ -164,6 +165,20 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
                     )}
                 </Box>
 
+                {/* Company */}
+                <Box>
+                    <Text fontSize="sm" fontWeight="medium" mb={1}>Azienda</Text>
+                    <Input
+                        value={formData.company}
+                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                        placeholder="Nome dell'azienda"
+                        borderColor={errors.company ? 'red.500' : 'gray.200'}
+                    />
+                    {errors.company && (
+                        <Text color="red.500" fontSize="sm" mt={1}>{errors.company}</Text>
+                    )}
+                </Box>
+
                 {/* Info Box */}
                 <Box bg="blue.50" p={4} borderRadius="md" borderLeftWidth="4px" borderLeftColor="blue.500">
                     <Text fontSize="sm" color="gray.700">
@@ -174,7 +189,7 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
                 {/* Custom Links Section */}
                 <Box mt={6}>
                     <Separator mb={6} />
-                    
+
                     <HStack justify="space-between" mb={4}>
                         <HStack gap={2}>
                             <FiLink />

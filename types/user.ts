@@ -21,6 +21,7 @@ export interface User {
   firstName: string;
   lastName: string;
   phone: string;
+  company: string; // Company name
   role: UserRole;
   isActive: boolean;
   createdAt: Date;
@@ -32,4 +33,5 @@ export interface CreateUserInput {
   firstName: string;
   lastName: string;
   phone: string;
+  company: string;
 }
