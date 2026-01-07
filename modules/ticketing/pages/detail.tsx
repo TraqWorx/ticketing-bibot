@@ -14,6 +14,7 @@
 import { AsanaTaskDetail } from '@/types';
 import axios from '@/utils/axios';
 import { sendTicketReopenedEvent } from '@/lib/ghl/ghlService';
+import { renderTextWithLinks } from '@/utils/commonUtils';
 import {
     Badge,
     Box,
@@ -23,6 +24,7 @@ import {
     HStack,
     Icon,
     IconButton,
+    Link,
     Spinner,
     Text,
     Textarea,
@@ -1006,7 +1008,7 @@ export default function TicketDetailPage() {
                                                 maxW="85%"
                                             >
                                                 <Text fontSize="sm" color="gray.800" lineHeight="1.6" whiteSpace="pre-wrap">
-                                                    {comment.text}
+                                                    {renderTextWithLinks(comment.text)}
                                                 </Text>
                                             </Box>
                                         </Flex>
