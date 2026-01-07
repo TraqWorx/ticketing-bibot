@@ -180,7 +180,7 @@ async function sendWebhookToUrl(webhookUrl: string, payload: Record<string, any>
             headers: {
                 'Content-Type': 'application/json',
             },
-            timeout: 10000, // 10 secondi timeout
+            timeout: 30000, // 30 secondi timeout
         });
 
         return true;
