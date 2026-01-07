@@ -375,42 +375,35 @@ export default function TicketDetailPage() {
 
         setIsSubmitting(true);
         try {
-            // Converti il blob in un File con nome appropriato
+            // Converti il blob audio in base64
             const timestamp = Date.now();
             const audioFileName = `nota-vocale-${timestamp}.webm`;
-            const audioFile = new File([audioBlob], audioFileName, {
-                type: 'audio/webm'
-            });
-
-            // STEP 1: Upload diretto su Vercel Blob Storage (client-side)            
-            // Genera nome file univoco per evitare conflitti
-            const randomSuffix = Math.random().toString(36).substring(2, 15);
-            const uniqueAudioFileName = `${audioFileName.replace(/\.[^/.]+$/, '')}_${randomSuffix}${audioFileName.match(/\.[^/.]+$/)?.[0] || ''}`;
             
-            const blob = await upload(uniqueAudioFileName, audioFile, {
-                access: 'public',
-                handleUploadUrl: '/api/blob/upload',
-            });
-
-            // Verifica immediatamente che il file sia accessibile
-            try {
-                const testResponse = await axios.head(blob.url);
-            } catch (testError: any) {
-                console.error('[Frontend] ❌ File NON accessibile subito dopo upload!', testError.response?.status);
-                toast.error('Errore: file caricato ma non accessibile');
-                return;
+            // Leggi il blob come ArrayBuffer e convertilo in base64
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            let binaryString = '';
+            for (let i = 0; i < uint8Array.length; i++) {
+                binaryString += String.fromCharCode(uint8Array[i]);
             }
+            const buffer = btoa(binaryString);
 
-            // STEP 2: Invia solo l'URL al backend
+            // Invia direttamente al backend senza passare per Vercel Blob
             const response = await axios.post('/api/asana/create-story', {
                 taskGid: id as string,
                 text: `🎤 Nota vocale: ${audioFileName}`,
-                attachmentUrls: [blob.url],
+                audioFile: {
+                    buffer: buffer,
+                    filename: audioFileName,
+                    mimetype: 'audio/webm'
+                }
             });
             
             setAudioBlob(null);
             setRecordingTime(0);
             await Promise.all([loadComments(), loadTaskDetail()]);
+            
+            toast.success('Nota vocale inviata con successo');
         } catch (error: any) {
             console.error('Error sending audio:', error);
             const errorMessage = error.response?.data?.message
@@ -1006,8 +999,10 @@ export default function TicketDetailPage() {
                                                 borderTopLeftRadius="md"
                                                 p={4}
                                                 maxW="85%"
+                                                wordBreak="break-word"
+                                                overflowWrap="break-word"
                                             >
-                                                <Text fontSize="sm" color="gray.800" lineHeight="1.6" whiteSpace="pre-wrap">
+                                                <Text fontSize="sm" color="gray.800" lineHeight="1.6" whiteSpace="pre-wrap" wordBreak="break-word" overflowWrap="break-word">
                                                     {renderTextWithLinks(comment.text)}
                                                 </Text>
                                             </Box>

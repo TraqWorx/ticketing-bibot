@@ -27,6 +27,11 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import { del } from '@vercel/blob';
 
+const skipPhrases = [
+  'Sottotitoli creati dalla comunità Amara.org',
+  // Aggiungi qui altre frasi da skippare in futuro
+];
+
 export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
   // Solo POST
   if (req.method !== 'POST') {
@@ -38,6 +43,7 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
       taskGid,
       text,
       attachmentUrls = [],
+      audioFile, // Nuovo campo per audio in base64
     } = req.body;
 
     // Validazione
@@ -51,14 +57,61 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
 
     // STEP 1+2: Scarica file da Blob Storage e carica su Asana
     let attachmentsUploaded = 0;
-    let totalAttachments = attachmentUrls.length;
+    let totalAttachments = attachmentUrls.length + (audioFile ? 1 : 0);
     const audioSummaries: string[] = [];
     const attachmentNames: string[] = [];
     const blobUrlsToDelete: string[] = [];
 
+    // Gestisci audioFile se presente (caricamento diretto)
+    if (audioFile && audioFile.buffer && audioFile.filename) {
+      try {
+        const fileBuffer = Buffer.from(audioFile.buffer, 'base64');
+        const contentType = audioFile.mimetype || 'audio/webm';
+        const filename = audioFile.filename;
+
+        attachmentNames.push(filename);
+
+        // Upload su Asana
+        await uploadAsanaAttachment(
+          taskGid,
+          fileBuffer,
+          filename,
+          contentType
+        );
+
+        attachmentsUploaded++;
+
+        // Trascrivi l'audio
+        let transcript = '';
+        try {
+          transcript = await transcribeAudioWithWhisper(fileBuffer, filename);
+        } catch (err) {
+          transcript = '';
+          console.error('[Whisper error]', err);
+        }
+
+        // Controlla se la trascrizione contiene una frase da skippare
+        const shouldSkipTranscript = skipPhrases.some(phrase =>
+          transcript && transcript.toLowerCase().includes(phrase.toLowerCase())
+        );
+
+        if (transcript && transcript.trim() && !shouldSkipTranscript) {
+          audioSummaries.push(`🎤 Nota vocale: ${filename}\nTrascrizione:\n${transcript}`);
+        } else {
+          audioSummaries.push(`🎤 Nota vocale: ${filename}`);
+        }
+
+      } catch (uploadError: any) {
+        console.error(`[create-story] ========== ERRORE UPLOAD AUDIO ==========`);
+        console.error(`[create-story] Filename: ${audioFile.filename}`);
+        console.error(`[create-story] Errore:`, uploadError.message || 'Nessun messaggio');
+        console.error(`[create-story] ========================================`);
+      }
+    }
+
     if (attachmentUrls && attachmentUrls.length > 0) {
       for (const blobUrl of attachmentUrls) {
-        try {          
+        try {
           // Scarica file da Vercel Blob
           const fileResponse = await axios.get(blobUrl, {
             responseType: 'arraybuffer',
@@ -66,11 +119,11 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
           });
 
           const fileBuffer = Buffer.from(fileResponse.data);
-          
+
           // Estrai nome file dall'URL
           const urlParts = blobUrl.split('/');
           const filename = urlParts[urlParts.length - 1];
-          
+
           // Determina content-type
           const contentType = fileResponse.headers['content-type'] || 'application/octet-stream';
 
@@ -96,7 +149,14 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
               transcript = '';
               console.error('[Whisper error]', err);
             }
-            if (transcript && transcript.trim()) {
+
+
+            // Controlla se la trascrizione contiene una frase da skippare
+            const shouldSkipTranscript = skipPhrases.some(phrase =>
+              transcript && transcript.toLowerCase().includes(phrase.toLowerCase())
+            );
+
+            if (transcript && transcript.trim() && !shouldSkipTranscript) {
               audioSummaries.push(`🎤 Nota vocale: ${filename}\nTrascrizione:\n${transcript}`);
             } else {
               audioSummaries.push(`🎤 Nota vocale: ${filename}`);
@@ -109,20 +169,20 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
           console.error(`[create-story] Errore tipo:`, typeof uploadError);
           console.error(`[create-story] Errore messaggio:`, uploadError.message || 'Nessun messaggio');
           console.error(`[create-story] Errore completo:`, JSON.stringify(uploadError, null, 2));
-          
+
           if (uploadError.response) {
             console.error('[create-story] HTTP Response status:', uploadError.response.status);
             console.error('[create-story] HTTP Response headers:', uploadError.response.headers);
             console.error('[create-story] HTTP Response data:', uploadError.response.data);
           }
-          
+
           if (uploadError.code) {
             console.error('[create-story] Error code:', uploadError.code);
           }
-          
+
           console.error('[create-story] Stack trace:', uploadError.stack);
           console.error(`[create-story] ========================================`);
-          
+
           blobUrlsToDelete.push(blobUrl); // Elimina comunque il blob
         }
       }
