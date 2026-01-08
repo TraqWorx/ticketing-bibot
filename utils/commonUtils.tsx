@@ -26,7 +26,7 @@ export const renderTextWithLinks = (text: string): ReactNode[] => {
     const matches = [];
     
     // Trova URL con protocollo
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = urlWithProtocolRegex.exec(text)) !== null) {
         matches.push({
             text: match[0],
@@ -73,7 +73,7 @@ export const renderTextWithLinks = (text: string): ReactNode[] => {
         
         // Verifica che non sia già stato catturato da altre regex
         const alreadyMatched = matches.some(m => 
-            m.index <= match.index && m.index + m.text.length >= match.index + matchText.length
+            match && m.index <= match.index && m.index + m.text.length >= match.index + matchText.length
         );
         if (alreadyMatched) continue;
         
