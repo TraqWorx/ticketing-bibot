@@ -192,7 +192,13 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
             const randomSuffix = Math.random().toString(36).substring(2, 15);
             const fileExtension = file.name.match(/\.[^/.]+$/)?.[0] || '';
             const baseName = file.name.replace(/\.[^/.]+$/, '');
-            const uniqueFileName = `${baseName}_${randomSuffix}${fileExtension}`;
+            // Sanitizza il nome file: sostituisci spazi con trattini e rimuovi caratteri speciali
+            const sanitizedBaseName = baseName
+              .replace(/\s+/g, '-') // spazi -> trattini
+              .replace(/[^\w-]/g, '') // rimuovi caratteri speciali (mantieni lettere, numeri, underscore, trattini)
+              .replace(/-+/g, '-') // trattini multipli -> singolo trattino
+              .replace(/^-|-$/g, ''); // rimuovi trattini iniziali/finali
+            const uniqueFileName = `${sanitizedBaseName}_${randomSuffix}${fileExtension}`;
             
             const blob = await upload(uniqueFileName, file, {
               access: 'public',
