@@ -92,8 +92,8 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
       const fileArray = Array.from(files);
       
       // Limite 50MB per file
-      const invalidFiles = fileArray.filter(file => file.size > 50 * 1024 * 1024);
-      if (invalidFiles.length > 0) {
+      const invalidSizeFiles = fileArray.filter(file => file.size > 50 * 1024 * 1024);
+      if (invalidSizeFiles.length > 0) {
         toast.error('Alcuni file superano il limite di 50MB');
         return;
       }
@@ -478,23 +478,19 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
                           : "Clicca o trascina per caricare file"
                       }
                     </Text>
-                    <Text fontSize="xs" color={isDragOver ? "green.500" : "gray.500"}>
-                      {isDragOver ? "🎯 Rilascia per caricare" : "📁 Massimo 50MB per file"}
-                    </Text>
                   </VStack>
                   <Input
                     type="file"
                     display="none"
                     onChange={handleFileChange}
                     disabled={isSubmitting}
-                    accept="image/*,.pdf,.doc,.docx,.txt,video/*"
                     multiple
                   />
                 </Box>
 
                 {/* Info tipi file accettati */}
                 <Text fontSize="xs" color="gray.500" mt={2} mb={attachments.length > 0 ? 4 : 0}>
-                  Formati supportati: Immagini (JPG, PNG, GIF), PDF, Word (DOC, DOCX), TXT, Video (MP4, AVI, MOV, etc.)
+                  Tutti i formati sono supportati • Dimensione massima: 50MB per file
                 </Text>
 
                 {/* Lista allegati caricati */}

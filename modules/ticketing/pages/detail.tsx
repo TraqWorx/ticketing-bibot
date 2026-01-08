@@ -1263,6 +1263,11 @@ export default function TicketDetailPage() {
                                 </>
                             )}
                         </HStack>
+
+                        {/* Info sui file supportati */}
+                        <Text fontSize="xs" color="gray.500" textAlign="center" mt={2}>
+                            Tutti i formati sono supportati • Dimensione massima: 50MB per file
+                        </Text>
                     </Box>
                 </Container>
             </Box>

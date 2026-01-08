@@ -31,16 +31,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       request: req,
       onBeforeGenerateToken: async (pathname) => {
         // Validazione opzionale: puoi controllare auth, limiti, etc
+        // allowedContentTypes omesso per permettere tutti i tipi di file
+        // La validazione dei tipi di file è gestita lato client
         return {
-          allowedContentTypes: [
-            'image/*',
-            'video/*',
-            'audio/*',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'text/plain',
-          ],
           tokenPayload: JSON.stringify({
             uploadedAt: new Date().toISOString(),
           }),
