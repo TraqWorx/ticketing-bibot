@@ -100,6 +100,15 @@ export default function TicketDetailPage() {
     const { id } = router.query;
     const isMobile = useBreakpointValue({ base: true, md: false });
 
+    // Funzione per determinare la route corretta per tornare indietro
+    const getBackRoute = () => {
+        return '/clienti/ticketing';
+    };
+
+    const handleGoBack = () => {
+        router.push(getBackRoute());
+    };
+
     const [newComment, setNewComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [taskDetail, setTaskDetail] = useState<AsanaTaskDetail | null>(null);
@@ -206,7 +215,7 @@ export default function TicketDetailPage() {
             // Se non c'è in cache, fai la chiamata API
             const response = await axios.get('/api/asana/tech-user');
             setCurrentAsanaUser(response.data);
-            
+
             // Salva il risultato nel localStorage per le prossime volte
             localStorage.setItem('techUser', JSON.stringify(response.data));
         } catch (error) {
@@ -219,7 +228,7 @@ export default function TicketDetailPage() {
         try {
             setLoadingFirestore(true);
             const response = await axios.get(`/api/tickets/${id}`);
-            
+
             // Gestisci la nuova struttura della risposta
             if (response.data?.exists === false) {
                 // Ticket non esiste su Firestore, ma non è un errore critico
@@ -322,7 +331,7 @@ export default function TicketDetailPage() {
             }
 
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            
+
             // Rileva il formato audio supportato dal browser
             // Safari/iOS supportano audio/mp4, altri browser audio/webm
             let mimeType = 'audio/webm';
@@ -333,7 +342,7 @@ export default function TicketDetailPage() {
             } else if (MediaRecorder.isTypeSupported('audio/webm')) {
                 mimeType = 'audio/webm';
             }
-            
+
             const mediaRecorder = new MediaRecorder(stream, { mimeType });
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
@@ -390,7 +399,7 @@ export default function TicketDetailPage() {
             // Converti il blob audio in base64
             const timestamp = Date.now();
             const audioFileName = `nota-vocale-${timestamp}.webm`;
-            
+
             // Leggi il blob come ArrayBuffer e convertilo in base64
             const arrayBuffer = await audioBlob.arrayBuffer();
             const uint8Array = new Uint8Array(arrayBuffer);
@@ -410,11 +419,11 @@ export default function TicketDetailPage() {
                     mimetype: audioBlob.type || 'audio/webm'
                 }
             });
-            
+
             setAudioBlob(null);
             setRecordingTime(0);
             await Promise.all([loadComments(), loadTaskDetail()]);
-            
+
             toast.success('Nota vocale inviata con successo');
         } catch (error: any) {
             console.error('Error sending audio:', error);
@@ -440,8 +449,8 @@ export default function TicketDetailPage() {
         try {
             // STEP 1: Upload file direttamente su Vercel Blob Storage (client-side)
             const blobUrls: string[] = [];
-            
-            if (attachments.length > 0) {                
+
+            if (attachments.length > 0) {
                 for (const file of attachments) {
                     try {
                         // Genera nome file univoco per evitare conflitti
@@ -450,17 +459,17 @@ export default function TicketDetailPage() {
                         const baseName = file.name.replace(/\.[^/.]+$/, '');
                         // Sanitizza il nome file: sostituisci spazi con trattini e rimuovi caratteri speciali
                         const sanitizedBaseName = baseName
-                          .replace(/\s+/g, '-') // spazi -> trattini
-                          .replace(/[^\w-]/g, '') // rimuovi caratteri speciali (mantieni lettere, numeri, underscore, trattini)
-                          .replace(/-+/g, '-') // trattini multipli -> singolo trattino
-                          .replace(/^-|-$/g, ''); // rimuovi trattini iniziali/finali
+                            .replace(/\s+/g, '-') // spazi -> trattini
+                            .replace(/[^\w-]/g, '') // rimuovi caratteri speciali (mantieni lettere, numeri, underscore, trattini)
+                            .replace(/-+/g, '-') // trattini multipli -> singolo trattino
+                            .replace(/^-|-$/g, ''); // rimuovi trattini iniziali/finali
                         const uniqueFileName = `${sanitizedBaseName}_${randomSuffix}${fileExtension}`;
-                        
+
                         const blob = await upload(uniqueFileName, file, {
                             access: 'public',
                             handleUploadUrl: '/api/blob/upload',
                         });
-                        
+
                         blobUrls.push(blob.url);
                     } catch (uploadError) {
                         console.error('Errore upload file su blob:', uploadError);
@@ -512,7 +521,7 @@ export default function TicketDetailPage() {
 
                 // Invia evento a GHL per workflow di riapertura
                 const clientId = taskDetail ? getClientIdFromAsana(taskDetail) : null;
-                
+
                 if (clientId && firestoreData?.ghlContactId) {
                     try {
                         await sendTicketReopenedEvent({
@@ -562,7 +571,7 @@ export default function TicketDetailPage() {
                             Ticket non trovato
                         </Text>
                         <Button
-                            onClick={() => router.back()}
+                            onClick={handleGoBack}
                             variant="outline"
                         >
                             <HStack gap={2}>
@@ -600,7 +609,7 @@ export default function TicketDetailPage() {
                                 </HStack>
                             </Button>
                             <Button
-                                onClick={() => router.back()}
+                                onClick={handleGoBack}
                                 variant="outline"
                             >
                                 <HStack gap={2}>
@@ -649,7 +658,7 @@ export default function TicketDetailPage() {
                                         aria-label="Torna indietro"
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => router.back()}
+                                        onClick={handleGoBack}
                                         borderRadius="full"
                                         ml={{ base: '-8px' }}
                                         mt={{ base: '-8px' }}
@@ -683,7 +692,7 @@ export default function TicketDetailPage() {
                                         aria-label="Torna indietro"
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => router.back()}
+                                        onClick={handleGoBack}
                                         borderRadius="full"
                                         display={{ base: 'none', md: 'flex' }}
                                     >
@@ -881,7 +890,7 @@ export default function TicketDetailPage() {
                                                 <Icon as={FiChevronRight} color="gray.400" boxSize="16px" />
                                             </HStack>
                                         ))}
-                                        
+
                                         {/* Pulsante mostra tutto/mostra meno per allegati */}
                                         {taskDetail.attachments.length > 3 && (
                                             <Button
