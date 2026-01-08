@@ -322,7 +322,19 @@ export default function TicketDetailPage() {
             }
 
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
+            
+            // Rileva il formato audio supportato dal browser
+            // Safari/iOS supportano audio/mp4, altri browser audio/webm
+            let mimeType = 'audio/webm';
+            if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                mimeType = 'audio/mp4';
+            } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                mimeType = 'audio/webm';
+            }
+            
+            const mediaRecorder = new MediaRecorder(stream, { mimeType });
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
 
@@ -333,7 +345,7 @@ export default function TicketDetailPage() {
             };
 
             mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
                 setAudioBlob(audioBlob);
                 stream.getTracks().forEach(track => track.stop());
             };
@@ -395,7 +407,7 @@ export default function TicketDetailPage() {
                 audioFile: {
                     buffer: buffer,
                     filename: audioFileName,
-                    mimetype: 'audio/webm'
+                    mimetype: audioBlob.type || 'audio/webm'
                 }
             });
             
@@ -436,7 +448,13 @@ export default function TicketDetailPage() {
                         const randomSuffix = Math.random().toString(36).substring(2, 15);
                         const fileExtension = file.name.match(/\.[^/.]+$/)?.[0] || '';
                         const baseName = file.name.replace(/\.[^/.]+$/, '');
-                        const uniqueFileName = `${baseName}_${randomSuffix}${fileExtension}`;
+                        // Sanitizza il nome file: sostituisci spazi con trattini e rimuovi caratteri speciali
+                        const sanitizedBaseName = baseName
+                          .replace(/\s+/g, '-') // spazi -> trattini
+                          .replace(/[^\w-]/g, '') // rimuovi caratteri speciali (mantieni lettere, numeri, underscore, trattini)
+                          .replace(/-+/g, '-') // trattini multipli -> singolo trattino
+                          .replace(/^-|-$/g, ''); // rimuovi trattini iniziali/finali
+                        const uniqueFileName = `${sanitizedBaseName}_${randomSuffix}${fileExtension}`;
                         
                         const blob = await upload(uniqueFileName, file, {
                             access: 'public',
