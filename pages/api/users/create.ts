@@ -47,6 +47,18 @@ async function sendPasswordResetWebhook(userData: {
     // Crea link personalizzato che punta alla nostra pagina
     const customResetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?oobCode=${oobCode}`;
 
+    // Save reset token data to database for later retrieval
+    await adminDb.collection('passwordResetTokens').doc(oobCode).set({
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      clientId: userData.id,
+      ghlContactId: userData.ghl_contact_id,
+      oobCode,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+    });
+
     // Invia webhook a GHL per gestire l'invio dell'email custom
     await sendPasswordResetEvent({
       clientId: userData.id,

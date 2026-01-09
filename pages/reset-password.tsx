@@ -88,17 +88,50 @@ export default function ResetPasswordPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [userEmail, setUserEmail] = useState('');
+    const [userData, setUserData] = useState<{
+        email: string;
+        firstName: string;
+        lastName: string;
+        clientId: string;
+        ghlContactId: string;
+    } | null>(null);
 
     // Estrai parametri dall'URL
     const { oobCode, mode } = router.query;
 
     useEffect(() => {
-
         // Verifica che siamo in modalità reset password
         if (mode && mode !== 'resetPassword') {
             setError('Link non valido per reset password');
         }
-    }, [mode, oobCode, router.query]);
+
+        // Se abbiamo un oobCode, prova a ottenere i dati dell'utente dal nostro database
+        if (oobCode && typeof oobCode === 'string') {
+            (async () => {
+                try {
+                    // Prima prova a ottenere i dati dal nostro database
+                    const response = await fetch(`/api/auth/get-reset-token?oobCode=${encodeURIComponent(oobCode)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUserData(data);
+                        setUserEmail(data.email);
+                    }
+                } catch (error) {
+                    console.log('Impossibile ottenere dati utente dal database:', error);
+                }
+
+                // Poi prova con Firebase (per compatibilità)
+                try {
+                    const email = await verifyPasswordResetCode(auth, oobCode);
+                    setUserEmail(email);
+                } catch (error) {
+                    // Se il codice non è valido, non impostiamo l'email da Firebase
+                    console.log('Impossibile ottenere email dal codice Firebase:', error);
+                }
+            })();
+        }
+    }, [mode, oobCode, auth]);
 
     // Validazione password
     const validatePassword = useCallback((pwd: string): string | null => {
@@ -203,6 +236,42 @@ export default function ResetPasswordPage() {
         })();
     }, [password, confirmPassword, oobCode, validatePassword, auth, setError, setIsLoading, setSuccess, toast, router]);
 
+    const handleRequestNewLink = useCallback(async () => {
+        if (!userData) {
+            setError('Impossibile determinare i dati dell\'utente. Contatta il supporto.');
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+
+        try {
+            const response = await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: userData.email }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setError('');
+                try { toast.success('Link di recupero password inviato! Controlla la tua email o whatsapp.'); } catch (toastError) { console.error('Toast error:', toastError); }
+            } else {
+                setError(data.message || 'Errore durante l\'invio del link');
+                try { toast.error(data.message || 'Errore durante l\'invio del link'); } catch (toastError) { console.error('Toast error:', toastError); }
+            }
+        } catch (error: any) {
+            const errorMessage = 'Errore di rete. Riprova più tardi.';
+            setError(errorMessage);
+            try { toast.error(errorMessage); } catch (toastError) { console.error('Toast error:', toastError); }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [userData, toast]);
+
     return (
         <ErrorBoundary>
             {success ? (
@@ -224,15 +293,27 @@ export default function ResetPasswordPage() {
                         Imposta la tua password
                     </Heading>
                     <Text color="gray.600">
-                        Inserisci una password sicura per il tuo account Blanco Studio
+                        Inserisci una password sicura per il tuo account
                     </Text>
                 </VStack>
 
                 {error && (
-                    <Box p={4} bg="red.50" borderRadius="md" border="1px" borderColor="red.200">
+                    <Box p={4} bg="red.50" borderRadius="md" border="1px" borderColor="red.200" textAlign="center">
                         <Text color="red.800" fontWeight="medium">
                             {error}
                         </Text>
+                        {error === 'Il link non è valido o è già stato utilizzato.' && userData && (
+                            <Button
+                                mt={3}
+                                size="sm"
+                                colorScheme="blue"
+                                onClick={handleRequestNewLink}
+                                loading={isLoading}
+                                loadingText="Invio..."
+                            >
+                                Richiedi nuovo link
+                            </Button>
+                        )}
                     </Box>
                 )}
 
