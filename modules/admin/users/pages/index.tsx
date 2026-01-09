@@ -217,6 +217,24 @@ export default function UsersManagementPage() {
     setTicketUserTarget(null);
   };
 
+  // Handle invio link reset password
+  const handleSendResetLink = async (user: User) => {
+    try {
+      const response = await axios.post('/api/auth/forgot-password', {
+        email: user.email,
+      });
+
+      if (response.status === 200) {
+        toast.success(`Link di reset password inviato a ${user.firstName} ${user.lastName}`);
+      } else {
+        throw new Error(response.data.message || 'Errore durante l\'invio del link');
+      }
+    } catch (error: any) {
+      console.error('Error sending reset link:', error);
+      toast.error(error.response?.data?.message || error.message || 'Errore durante l\'invio del link di reset');
+    }
+  };
+
   // Handle successo creazione ticket
   const handleTicketSuccess = () => {
     setTicketUserTarget(null);
@@ -371,6 +389,7 @@ export default function UsersManagementPage() {
               onEdit={handleEditUser}
               onDeleteUser={handleDeleteUser}
               onCreateTicket={handleCreateTicketForUser}
+              onSendResetLink={handleSendResetLink}
             />
 
             {/* Paginazione */}

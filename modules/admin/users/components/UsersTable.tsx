@@ -12,7 +12,7 @@
  * Design: Tabella responsive, azioni chiare
  */
 
-import { 
+import {
   Box,
   Badge,
   IconButton,
@@ -23,7 +23,7 @@ import {
   Icon,
 } from '@chakra-ui/react';
 import { Tooltip } from '@chakra-ui/react';
-import { FiEdit2, FiTrash2, FiFileText, FiMail, FiPhone, FiMoreVertical } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiFileText, FiMail, FiPhone, FiMoreVertical, FiKey } from 'react-icons/fi';
 import { User } from '@/types';
 
 interface UsersTableProps {
@@ -31,9 +31,10 @@ interface UsersTableProps {
   onEdit?: (user: User) => void;
   onDeleteUser?: (userId: string, clientName: string) => void;
   onCreateTicket?: (user: User) => void;
+  onSendResetLink?: (user: User) => void;
 }
 
-export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket }: UsersTableProps) => {
+export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket, onSendResetLink }: UsersTableProps) => {
   if (users.length === 0) {
     return (
       <Box p={8} textAlign="center" bg="white" borderRadius="lg" borderWidth="1px">
@@ -93,6 +94,14 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket }: User
                   </Menu.Trigger>
                   <Menu.Positioner>
                     <Menu.Content>
+                      {onEdit && (
+                        <Menu.Item value="edit-user" onClick={() => onEdit(user)}>
+                          <HStack gap={2}>
+                            <Icon as={FiEdit2} />
+                            <Text>Modifica</Text>
+                          </HStack>
+                        </Menu.Item>
+                      )}
                       {onCreateTicket && (
                         <Menu.Item value="create-ticket" onClick={() => onCreateTicket(user)}>
                           <HStack gap={2}>
@@ -101,11 +110,11 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket }: User
                           </HStack>
                         </Menu.Item>
                       )}
-                      {onEdit && (
-                        <Menu.Item value="edit-user" onClick={() => onEdit(user)}>
+                      {onSendResetLink && (
+                        <Menu.Item value="send-reset-link" onClick={() => onSendResetLink(user)}>
                           <HStack gap={2}>
-                            <Icon as={FiEdit2} />
-                            <Text>Modifica</Text>
+                            <Icon as={FiKey} />
+                            <Text>Invia reset password</Text>
                           </HStack>
                         </Menu.Item>
                       )}

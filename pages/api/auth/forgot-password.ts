@@ -32,7 +32,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Extract oobCode from Firebase link and create our custom reset link
         const url = new URL(firebaseResetLink);
         const oobCode = url.searchParams.get('oobCode');
+
+        if (!oobCode) {
+            throw new Error('Impossibile estrarre il codice OOB dal link di Firebase');
+        }
+
         const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?oobCode=${oobCode}`;
+
+        // Save reset token data to database for later retrieval
+        await adminDb.collection('passwordResetTokens').doc(oobCode).set({
+            email,
+            firstName,
+            lastName,
+            clientId,
+            ghlContactId,
+            oobCode,
+            createdAt: new Date(),
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        });
 
         // Send to GHL
         await sendPasswordForgotEvent({
