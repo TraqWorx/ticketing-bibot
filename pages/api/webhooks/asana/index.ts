@@ -57,6 +57,7 @@
 import { getStory, getTaskDetail } from '@/lib/asana/asanaService';
 import { sendTicketCompletedEvent, sendTicketCreatedEvent, sendTicketReopenedEvent, sendTicketRepliedByAdminEvent } from '@/lib/ghl/ghlService';
 import { closeTicket, createTicket, deleteTicket, getTicket, getUserById, reopenTicket, updateTicket, updateTicketOnReply } from '@/lib/ticket/ticketService';
+import { FirestoreTicket } from '@/types/ticket';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 // Disabilita body parser per ricevere raw body
@@ -196,7 +197,7 @@ async function handleNewStory(event: any): Promise<void> {
 
   try {
     // Recupera ticket da Firestore
-    const ticket = await getTicket(taskGid);
+    const ticket: FirestoreTicket | null = await getTicket(taskGid);
     if (!ticket) {
       return;
     }
@@ -224,6 +225,7 @@ async function handleNewStory(event: any): Promise<void> {
         clientId: ticket.clientId,
         ghlContactId: ticket.ghlContactId,
         ticketId: taskGid,
+        ticketTitle: ticket.title
       });
     }
   } catch (error: any) {
