@@ -286,6 +286,7 @@ export async function sendTicketRepliedByClientEvent(params: {
  * Invia evento: Admin ha risposto al ticket
  * 
  * Webhook URL: GHL_WEBHOOK_ADMIN_REPLIED
+ * Webhook URL: GHL_WEBHOOK_CLIENT_FOLLOWUP_AFTER_ADMIN_RESPONSE
  * 
  * GHL Workflow può:
  * - Notificare cliente via WhatsApp/SMS/email
@@ -296,8 +297,10 @@ export async function sendTicketRepliedByAdminEvent(params: {
     clientId: string;
     ghlContactId: string;
     ticketId: string;
+    ticketTitle?: string;
 }): Promise<boolean> {
-    const webhookUrl = process.env.GHL_WEBHOOK_ADMIN_REPLIED;
+    const adminRepliedWebhookUrl = process.env.GHL_WEBHOOK_ADMIN_REPLIED;
+    const clientFollowupWebhookUrl = process.env.GHL_WEBHOOK_CLIENT_FOLLOWUP_AFTER_ADMIN_RESPONSE;
 
     const payload: GHLTicketRepliedPayload = {
         event: 'ticket_replied_by_admin',
@@ -306,13 +309,16 @@ export async function sendTicketRepliedByAdminEvent(params: {
             clientId: params.clientId,
             ghlContactId: params.ghlContactId,
             ticketId: params.ticketId,
+            ticketTitle: params.ticketTitle,
             ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
             repliedAt: new Date().toISOString(),
             repliedBy: 'admin' as MessageAuthor,
         },
     };
 
-    return sendWebhookToUrl(webhookUrl || '', payload);
+    sendWebhookToUrl(adminRepliedWebhookUrl || '', payload);
+    return sendWebhookToUrl(clientFollowupWebhookUrl || '', payload);
+
 }
 
 /**

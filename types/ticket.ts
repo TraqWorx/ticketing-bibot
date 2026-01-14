@@ -149,6 +149,7 @@ export interface GHLTicketRepliedPayload extends GHLWebhookPayload {
     clientId: string;
     ghlContactId: string;
     ticketId: string;
+    ticketTitle?: string;
     ticketUrl?: string;
     repliedAt: string;
     repliedBy: MessageAuthor;
