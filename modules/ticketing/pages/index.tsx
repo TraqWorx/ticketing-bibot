@@ -44,11 +44,11 @@ export default function TicketingPage() {
   // Imposta itemsPerPage in base alla dimensione dello schermo
   const itemsPerPage = useBreakpointValue({ base: 5, md: 8 }) || 8;
 
-  // Filtri status con checkbox - default aperti e in lavorazione
+  // Filtri status con checkbox - default aperti, in lavorazione e completati
   const [statusFilters, setStatusFilters] = useState({
     open: true,
     inProgress: true,
-    completed: false,
+    completed: true,
   });
 
   // Filtri priorità con checkbox - default nessuna selezionata
