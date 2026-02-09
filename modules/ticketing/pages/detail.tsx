@@ -960,13 +960,15 @@ export default function TicketDetailPage() {
                                     </VStack>
                                 </Flex>
                             ) : (
-                                comments.map((comment, index) => (
-                                    <Box key={comment.gid}>
-                                        {/* Divider temporale */}
-                                        {(index === 0 ||
-                                            new Date(comment.created_at).toDateString() !==
-                                            new Date(comments[index - 1].created_at).toDateString()) && (
-                                                <Flex align="center" gap={2} mb={3}>
+                                (() => {
+                                    const validComments = comments.filter(comment => comment.created_by);
+                                    return validComments.map((comment, index) => (
+                                        <Box key={comment.gid}>
+                                            {/* Divider temporale */}
+                                            {(index === 0 ||
+                                                new Date(comment.created_at).toDateString() !==
+                                                new Date(validComments[index - 1].created_at).toDateString()) && (
+                                                    <Flex align="center" gap={2} mb={3}>
                                                     <Box flex={1} h="1px" bg="gray.200" />
                                                     <HStack gap={1} px={2}>
                                                         <Icon as={FiClock} boxSize="12px" color="gray.400" />
@@ -1010,7 +1012,7 @@ export default function TicketDetailPage() {
                                                         }
 
                                                         // Per commenti di altre persone, mostra il nome originale
-                                                        return comment.created_by.name;
+                                                        return comment.created_by.name || 'Utente sconosciuto';
                                                     })()}
                                                 </Text>
                                                 <Text fontSize="xs" color="gray.400">
@@ -1035,7 +1037,8 @@ export default function TicketDetailPage() {
                                             </Box>
                                         </Flex>
                                     </Box>
-                                ))
+                                    ));
+                                })()
                             )}
                             <div ref={commentsEndRef} />
                         </VStack>
