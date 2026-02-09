@@ -801,7 +801,7 @@ export default function TicketDetailPage() {
                                     position="relative"
                                     ref={descriptionRef}
                                 >
-                                    <Text fontSize="sm" color="gray.600" lineHeight="1.6" wordBreak="break-word" overflowWrap="break-word">
+                                    <Text fontSize="sm" color="gray.600" lineHeight="1.6" whiteSpace="pre-wrap" wordBreak="break-word" overflowWrap="break-word">
                                         {renderTextWithLinks(taskDetail.notes)}
                                     </Text>
                                     {!isDescriptionExpanded && showExpandButton && (
