@@ -1244,7 +1244,7 @@ export default function TicketDetailPage() {
                                     <Textarea
                                         value={newComment}
                                         onChange={(e) => setNewComment(e.target.value)}
-                                        placeholder={taskDetail.completed ? "Ticket completato" : "Scrivi un messaggio..."}
+                                        placeholder={taskDetail.completed ? "Questo ticket è stato completato. Per riaprirlo, clicca sul pulsante 'Riapri ticket' nella parte superiore della pagina" : "Scrivi un messaggio..."}
                                         bg="gray.50"
                                         borderColor="gray.300"
                                         borderRadius="xl"
