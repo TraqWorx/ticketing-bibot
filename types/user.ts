@@ -14,6 +14,15 @@ import { UserRole } from './roles';
 // Re-export UserRole for convenience
 export { UserRole } from './roles';
 
+
+export interface UserDelegate {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  ghl_contact_id?: string;
+}
+
 export interface User {
   id: string; // Firebase UID
   ghl_contact_id: string; // GoHighLevel Contact ID
@@ -26,6 +35,7 @@ export interface User {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  delegates?: UserDelegate[]; // Nuovo campo: lista delegati
 }
 
 export interface CreateUserInput {
@@ -34,4 +44,5 @@ export interface CreateUserInput {
   lastName: string;
   phone: string;
   company: string;
+  delegates?: UserDelegate[];
 }

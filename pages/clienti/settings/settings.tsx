@@ -5,7 +5,7 @@
  */
 
 import { DashboardLayout } from '@/layouts/DashboardLayout';
-import SettingsPage from '@/modules/settings/pages';
+import SettingsPage from '@/modules/settings';
 
 export default function DashboardSettings() {
   return (

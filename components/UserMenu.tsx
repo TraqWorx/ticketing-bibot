@@ -5,13 +5,13 @@
  * Features: Avatar con iniziale, nome, email, stato account, menu dropdown con logout
  */
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { Box, Text, HStack, VStack, Badge, Separator } from '@chakra-ui/react';
-import { FiLogOut, FiKey } from 'react-icons/fi';
-import { useAuth } from '@/contexts/AuthContext';
 import { auth } from '@/config/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/router';
+import { useEffect, useRef, useState } from 'react';
+import { FiKey, FiLogOut, FiSettings } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { ChangePasswordModal } from './ChangePasswordModal';
 
@@ -21,6 +21,8 @@ export const UserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // usare handler inline per evitare riferimenti fuori scope durante HMR
 
   // Chiudi menu quando clicchi fuori
   useEffect(() => {
@@ -48,22 +50,27 @@ export const UserMenu = () => {
     }
   };
 
+  const handleGoToSettings = () => {
+    setIsOpen(false);
+    router.push('/clienti/settings');
+  };
+
   if (!user) {
     return null;
   }
 
-  const displayName = user.firstName && user.lastName 
-    ? `${user.firstName} ${user.lastName}` 
+  const displayName = user.firstName && user.lastName
+    ? `${user.firstName} ${user.lastName}`
     : user.email || 'Utente';
-  
+
   const firstLetter = user.firstName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U';
 
   return (
     <Box position="relative" ref={menuRef}>
-      <HStack 
-        cursor="pointer" 
-        px={3} 
-        py={2} 
+      <HStack
+        cursor="pointer"
+        px={3}
+        py={2}
         borderRadius="md"
         _hover={{ bg: 'gray.100' }}
         transition="all 0.2s"
@@ -105,6 +112,7 @@ export const UserMenu = () => {
           zIndex={1000}
         >
           <VStack gap={0} align="stretch">
+
             {/* Cambia Password */}
             <Box
               px={4}
@@ -118,9 +126,26 @@ export const UserMenu = () => {
               }}
             >
               <HStack gap={3}>
-                <Box as={FiKey} color="blue.500" />
-                <Text fontSize="sm" fontWeight="medium" color="blue.600">
-                  Cambia Password
+                <Box as={FiKey} />
+                <Text fontSize="sm">
+                  Cambio Password
+                </Text>
+              </HStack>
+            </Box>
+
+            {/* Gestione Impostazioni */}
+            <Box
+              px={4}
+              py={3}
+              cursor="pointer"
+              _hover={{ bg: 'blue.50' }}
+              transition="all 0.2s"
+              onClick={handleGoToSettings}
+            >
+              <HStack gap={3}>
+                <Box as={FiSettings} />
+                <Text fontSize="sm">
+                  Impostazioni
                 </Text>
               </HStack>
             </Box>

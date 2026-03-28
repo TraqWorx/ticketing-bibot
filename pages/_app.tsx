@@ -20,6 +20,10 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import axios from '@/utils/axios';
 import { useEffect, useState } from 'react';
 import { SessionExpiredModal, setSessionExpiredModalHandler } from '@/components/SessionExpiredModal';
+import initFetchLogger from '@/utils/fetchLogger';
+
+// Initialize client-side fetch logger (no-op on server)
+initFetchLogger();
 
 function Axios401Handler() {
   const { signOut } = useAuth();

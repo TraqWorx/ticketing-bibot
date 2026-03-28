@@ -13,13 +13,13 @@
  */
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { 
-  signInWithEmailAndPassword, 
+import {
+  signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  User as FirebaseUser
+  User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db, COLLECTIONS } from '@/config/firebase';
 import { User, UserRole } from '@/types';
 
@@ -42,34 +42,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Listen to Firebase Auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubUser: (() => void) | null = null;
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      // Clean any previous user snapshot listener
+      if (unsubUser) {
+        try { unsubUser(); } catch (e) { }
+        unsubUser = null;
+      }
+
       if (firebaseUser) {
         setFirebaseUser(firebaseUser);
-        
-        // Get user data from Firestore
-        try {
-          const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
-          
-          if (userDoc.exists()) {
-            const userData = userDoc.data() as User;
-            setUser(userData);
+
+        // Listen in realtime to the user document so UI updates when delegates change
+        const userDocRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
+        unsubUser = onSnapshot(userDocRef, (snap) => {
+          if (snap.exists()) {
+            setUser(snap.data() as User);
           } else {
             console.error('User document not found in Firestore for UID:', firebaseUser.uid);
             setUser(null);
           }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
+          setLoading(false);
+        }, (err) => {
+          console.error('Error listening to user document:', err);
           setUser(null);
-        }
+          setLoading(false);
+        });
       } else {
         setFirebaseUser(null);
         setUser(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubUser) {
+        try { unsubUser(); } catch (e) { }
+      }
+      unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
