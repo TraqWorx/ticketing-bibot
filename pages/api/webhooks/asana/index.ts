@@ -220,13 +220,26 @@ async function handleNewStory(event: any): Promise<void> {
 
     // Invia notifica al cliente via GHL
     if (ticket.ghlContactId) {
-      // Invia webhook evento a GHL
-      await sendTicketRepliedByAdminEvent({
-        clientId: ticket.clientId,
-        ghlContactId: ticket.ghlContactId,
-        ticketId: taskGid,
-        ticketTitle: ticket.title
-      });
+      // Recupera delegati dall'utente su Firestore e invia webhook (inclusi delegati)
+      try {
+        const client = await getUserById(ticket.clientId);
+        const delegates = client?.delegates || [];
+        await sendTicketRepliedByAdminEvent({
+          clientId: ticket.clientId,
+          ghlContactId: ticket.ghlContactId,
+          ticketId: taskGid,
+          ticketTitle: ticket.title,
+          delegates,
+        });
+      } catch (err) {
+        console.warn('[Asana Webhook] Impossibile recuperare delegati per sendTicketRepliedByAdminEvent:', err);
+        await sendTicketRepliedByAdminEvent({
+          clientId: ticket.clientId,
+          ghlContactId: ticket.ghlContactId,
+          ticketId: taskGid,
+          ticketTitle: ticket.title,
+        });
+      }
     }
   } catch (error: any) {
     console.error('[Asana Webhook] Errore gestione story:', error.message);
@@ -309,11 +322,23 @@ async function handleTaskChanged(event: any): Promise<void> {
 
     // Invia notifica a GHL
     if (ticket.ghlContactId) {
-      const ghlResult = await sendTicketCompletedEvent({
-        clientId: ticket.clientId,
-        ghlContactId: ticket.ghlContactId,
-        ticketId: taskGid,
-      });
+      try {
+        const client = await getUserById(ticket.clientId);
+        const delegates = client?.delegates || [];
+        const ghlResult = await sendTicketCompletedEvent({
+          clientId: ticket.clientId,
+          ghlContactId: ticket.ghlContactId,
+          ticketId: taskGid,
+          delegates,
+        });
+      } catch (err) {
+        console.warn('[Asana Webhook] Impossibile recuperare delegati per sendTicketCompletedEvent:', err);
+        await sendTicketCompletedEvent({
+          clientId: ticket.clientId,
+          ghlContactId: ticket.ghlContactId,
+          ticketId: taskGid,
+        });
+      }
     }
   } catch (error: any) {
     console.error('[Asana Webhook] Errore chiusura ticket:', error.message, error.stack);
@@ -349,11 +374,23 @@ async function handleTaskMarkedComplete(event: any): Promise<void> {
 
     // Invia notifica a GHL
     if (ticket.ghlContactId) {
-      const ghlResult = await sendTicketCompletedEvent({
-        clientId: ticket.clientId,
-        ghlContactId: ticket.ghlContactId,
-        ticketId: taskGid,
-      });
+      try {
+        const client = await getUserById(ticket.clientId);
+        const delegates = client?.delegates || [];
+        await sendTicketCompletedEvent({
+          clientId: ticket.clientId,
+          ghlContactId: ticket.ghlContactId,
+          ticketId: taskGid,
+          delegates,
+        });
+      } catch (err) {
+        console.warn('[Asana Webhook] Impossibile recuperare delegati per sendTicketCompletedEvent (story):', err);
+        await sendTicketCompletedEvent({
+          clientId: ticket.clientId,
+          ghlContactId: ticket.ghlContactId,
+          ticketId: taskGid,
+        });
+      }
     }
 
   } catch (error: any) {
@@ -389,12 +426,25 @@ async function handleTaskMarkedIncomplete(event: any): Promise<void> {
 
     // Invia notifica a GHL
     if (ticket.ghlContactId) {
-      const ghlResult = await sendTicketReopenedEvent({
-        clientId: ticket.clientId,
-        ghlContactId: ticket.ghlContactId,
-        ticketId: taskGid,
-        reopenedBy: 'admin',
-      });
+      try {
+        const client = await getUserById(ticket.clientId);
+        const delegates = client?.delegates || [];
+        await sendTicketReopenedEvent({
+          clientId: ticket.clientId,
+          ghlContactId: ticket.ghlContactId,
+          ticketId: taskGid,
+          reopenedBy: 'admin',
+          delegates,
+        });
+      } catch (err) {
+        console.warn('[Asana Webhook] Impossibile recuperare delegati per sendTicketReopenedEvent:', err);
+        await sendTicketReopenedEvent({
+          clientId: ticket.clientId,
+          ghlContactId: ticket.ghlContactId,
+          ticketId: taskGid,
+          reopenedBy: 'admin',
+        });
+      }
     }
 
   } catch (error: any) {
@@ -496,6 +546,7 @@ async function handleTaskCreated(event: any): Promise<void> {
         firstName: client.firstName,
         lastName: client.lastName,
         clientPhone,
+        delegates: client.delegates || [],
       });
     } else {
       console.warn(`[Asana Webhook] ghl_contact_id NON presente per cliente ${taskCreatorId} - skip notifica GHL`);
@@ -621,6 +672,7 @@ async function handleTaskCustomFieldsChanged(event: any): Promise<void> {
         firstName: client.firstName,
         lastName: client.lastName,
         clientPhone,
+        delegates: client.delegates || [],
       });
     } else {
       console.warn(`[Asana Webhook] ghl_contact_id NON presente per cliente ${taskCreatorId} - skip notifica GHL`);

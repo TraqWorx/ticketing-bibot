@@ -14,12 +14,15 @@ import { adminAuth, adminDb } from '@/config/firebase-admin';
 import { UserRole } from '@/types';
 import { searchGHLContact, createGHLContact, sendPasswordResetEvent } from '@/lib/ghl/ghlService';
 
+import { UserDelegate } from '@/types/user';
+
 interface CreateUserBody {
   email: string;
   firstName: string;
   lastName: string;
   phone: string;
   company: string;
+  delegates?: UserDelegate[];
 }
 
 // Genera link di reset password e invia webhook a GHL per email custom
@@ -84,24 +87,19 @@ async function handler(
   }
 
   try {
-    const { email, firstName, lastName, phone, company } = req.body as CreateUserBody;
+    const { email, firstName, lastName, phone, company, delegates } = req.body as CreateUserBody;
 
     // Validazione input
     if (!email || !firstName || !lastName) {
       return res.status(400).json({ error: 'Campi obbligatori mancanti' });
     }
 
-    // 0. Cerca o crea contatto su Go High Level
+    // 0. Cerca o crea contatto su Go High Level (principale)
     let ghlContactId = '';
-
-    // Cerca contatto esistente solo per email
     let ghlContact = await searchGHLContact(email);
-
     if (ghlContact) {
-      // Contatto trovato, usa il suo ID
       ghlContactId = ghlContact.id;
     } else {
-      // Contatto non trovato, creane uno nuovo
       ghlContact = await createGHLContact({
         email,
         firstName,
@@ -109,6 +107,28 @@ async function handler(
         phone,
       });
       ghlContactId = ghlContact.id;
+    }
+
+    // 1. Gestione delegati: crea/recupera contatti GHL per ciascun delegato
+    let delegatesWithGhlId: UserDelegate[] = [];
+    if (Array.isArray(delegates)) {
+      for (const delegate of delegates) {
+        if (!delegate.email) continue;
+        let delegateContact = await searchGHLContact(delegate.email);
+        let delegateGhlId = '';
+        if (delegateContact) {
+          delegateGhlId = delegateContact.id;
+        } else {
+          const created = await createGHLContact({
+            email: delegate.email,
+            firstName: delegate.firstName,
+            lastName: delegate.lastName,
+            phone: delegate.phone,
+          });
+          delegateGhlId = created.id;
+        }
+        delegatesWithGhlId.push({ ...delegate, ghl_contact_id: delegateGhlId });
+      }
     }
 
     // 1. Crea utente in Firebase Auth (SENZA password)
@@ -123,6 +143,7 @@ async function handler(
     await adminAuth.setCustomUserClaims(userRecord.uid, { role: UserRole.CLIENT });
 
     // 3. Salva dati in Firestore
+
     const userData = {
       id: userRecord.uid,
       ghl_contact_id: ghlContactId,
@@ -135,6 +156,7 @@ async function handler(
       isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      delegates: delegatesWithGhlId,
     };
 
     await adminDb.collection('users').doc(userRecord.uid).set(userData);

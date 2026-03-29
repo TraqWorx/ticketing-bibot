@@ -21,7 +21,7 @@
 import { createAsanaTask, uploadAsanaAttachment } from '@/lib/asana/asanaService';
 import { withAuth } from '@/lib/auth-middleware';
 import { sendTicketCreatedEvent } from '@/lib/ghl/ghlService';
-import { createTicket } from '@/lib/ticket/ticketService';
+import { createTicket, getUserById } from '@/lib/ticket/ticketService';
 import { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 import { del } from '@vercel/blob';
@@ -160,6 +160,16 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
     if (ghlContactId) {
       const [firstName, ...lastNameParts] = creatorName.split(' ');
       const lastName = lastNameParts.join(' ');
+
+      // Recupera delegati dall'utente in Firestore (se presenti)
+      let delegates = [];
+      try {
+        const client = await getUserById(creatorId);
+        delegates = client?.delegates || [];
+      } catch (err) {
+        console.warn('[create-task] Impossibile recuperare delegati utente:', err);
+      }
+
       webhookSent = await sendTicketCreatedEvent({
         clientId: creatorId,
         ghlContactId,
@@ -169,6 +179,7 @@ export default withAuth(async (req: NextApiRequest, res: NextApiResponse) => {
         firstName,
         lastName,
         clientPhone: creatorPhone,
+        delegates,
       });
     }
 
