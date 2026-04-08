@@ -12,6 +12,7 @@
  * Design: Tabella responsive, azioni chiare
  */
 
+import { useState } from 'react';
 import {
   Box,
   Badge,
@@ -22,8 +23,8 @@ import {
   Menu,
   Icon,
 } from '@chakra-ui/react';
-import { Tooltip } from '@chakra-ui/react';
-import { FiEdit2, FiTrash2, FiFileText, FiMail, FiPhone, FiMoreVertical, FiKey } from 'react-icons/fi';
+// removed Tooltip import due to type issues with Chakra v3; using native `title` attribute on buttons instead
+import { FiEdit2, FiTrash2, FiFileText, FiMail, FiPhone, FiMoreVertical, FiKey, FiCopy, FiCheck } from 'react-icons/fi';
 import { User } from '@/types';
 
 interface UsersTableProps {
@@ -35,6 +36,24 @@ interface UsersTableProps {
 }
 
 export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket, onSendResetLink }: UsersTableProps) => {
+  const [copiedMap, setCopiedMap] = useState<Record<string, boolean>>({});
+
+  const handleCopy = async (value?: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedMap(prev => ({ ...prev, [value]: true }));
+      setTimeout(() => setCopiedMap(prev => { const n = { ...prev }; delete n[value]; return n; }), 1500);
+    } catch (err) {
+      /* ignore copy errors silently */
+    }
+  };
+
+  const truncateMiddle = (s?: string, start = 8, end = 6) => {
+    if (!s) return '-';
+    if (s.length <= start + end + 3) return s;
+    return `${s.slice(0, start)}...${s.slice(-end)}`;
+  };
   if (users.length === 0) {
     return (
       <Box p={8} textAlign="center" bg="white" borderRadius="lg" borderWidth="1px">
@@ -49,6 +68,7 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket, onSend
         <Box as="thead" bg="gray.50" borderBottomWidth="1px">
           <Box as="tr">
             <Box as="th" p={2} textAlign="center" fontSize="xs" fontWeight="semibold" width="50px">#</Box>
+            <Box as="th" p={2} textAlign="left" fontSize="xs" fontWeight="semibold">ID</Box>
             <Box as="th" p={2} textAlign="left" fontSize="xs" fontWeight="semibold">Nome</Box>
             <Box as="th" p={2} textAlign="left" fontSize="xs" fontWeight="semibold">Email</Box>
             <Box as="th" p={2} textAlign="left" fontSize="xs" fontWeight="semibold">Telefono</Box>
@@ -61,6 +81,21 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket, onSend
           {users.map((user, index) => (
             <Box as="tr" key={user.id} borderBottomWidth="1px" _hover={{ bg: 'gray.50' }}>
               <Box as="td" p={2} textAlign="center" color="gray.500" fontSize="xs">{index + 1}</Box>
+              <Box as="td" p={2} fontWeight="medium" color="gray.600" fontSize="xs">
+                <HStack alignItems="center">
+                  <Text fontSize="xs" color="gray.700" fontFamily="mono">{truncateMiddle(user.id)}</Text>
+                  <IconButton
+                    title={copiedMap[user.id] ? 'Copiato' : 'Copia ID'}
+                    aria-label={copiedMap[user.id] ? 'ID copiato' : 'Copia ID'}
+                    size="xs"
+                    variant="ghost"
+                    colorScheme={copiedMap[user.id] ? 'green' : 'gray'}
+                    onClick={() => handleCopy(user.id)}
+                  >
+                    <Icon as={copiedMap[user.id] ? FiCheck : FiCopy} color="gray.500" boxSize={3} />
+                  </IconButton>
+                </HStack>
+              </Box>
               <Box as="td" p={2} fontWeight="medium" fontSize="sm">{`${user.firstName} ${user.lastName}`}</Box>
               <Box as="td" p={2} fontSize="sm">
                 <HStack gap={1}>
@@ -78,7 +113,19 @@ export const UsersTable = ({ users, onEdit, onDeleteUser, onCreateTicket, onSend
                 <Text fontSize="xs" color="gray.700">{user.company || '-'}</Text>
               </Box>
               <Box as="td" p={2}>
-                <Text fontSize="xs" color="gray.600" fontFamily="mono">{user.ghl_contact_id}</Text>
+                <HStack alignItems="center">
+                  <Text fontSize="xs" color="gray.600" fontFamily="mono">{truncateMiddle(user.ghl_contact_id)}</Text>
+                  <IconButton
+                    title={copiedMap[user.ghl_contact_id] ? 'Copiato' : 'Copia GHL ID'}
+                    aria-label={copiedMap[user.ghl_contact_id] ? 'GHL ID copiato' : 'Copia GHL ID'}
+                    size="xs"
+                    variant="ghost"
+                    colorScheme={copiedMap[user.ghl_contact_id] ? 'green' : 'gray'}
+                    onClick={() => handleCopy(user.ghl_contact_id)}
+                  >
+                    <Icon as={copiedMap[user.ghl_contact_id] ? FiCheck : FiCopy} color="gray.500" boxSize={3} />
+                  </IconButton>
+                </HStack>
               </Box>
               <Box as="td" p={2}>
                 <Menu.Root>
