@@ -466,9 +466,9 @@ export default function TicketingPage() {
 
           <Button
             size="sm"
-            bg="black"
+            bg="brand.500"
             color="white"
-            _hover={{ bg: 'gray.800' }}
+            _hover={{ bg: 'brand.600' }}
             onClick={handleCreateTicket}
           >
             <HStack gap={1}>
@@ -500,7 +500,7 @@ export default function TicketingPage() {
           borderColor="gray.200"
           pl="40px"
           _hover={{ borderColor: 'gray.300' }}
-          _focus={{ borderColor: 'black', boxShadow: '0 0 0 1px black' }}
+          _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 1px black' }}
         />
       </Box>
 
@@ -512,7 +512,7 @@ export default function TicketingPage() {
             align="center"
             h="200px"
           >
-            <Spinner size="lg" color="black" />
+            <Spinner size="lg" color="brand.500" />
           </Flex>
         ) : error ? (
           <Flex

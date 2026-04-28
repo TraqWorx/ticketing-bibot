@@ -324,9 +324,9 @@ export default function UsersManagementPage() {
           <Flex justify="space-between" align="center" direction="row" gap={3} wrap="wrap">
             <Heading size="sm" color="gray.700" whiteSpace="nowrap">Clienti ({totalUsers})</Heading>
             <Button
-              bg="black"
+              bg="brand.500"
               color="white"
-              _hover={{ bg: 'gray.800' }}
+              _hover={{ bg: 'brand.600' }}
               onClick={() => setIsModalOpen(true)}
               size="sm"
               flexShrink={0}
@@ -362,16 +362,16 @@ export default function UsersManagementPage() {
                 pl="40px"
                 size="sm"
                 _hover={{ borderColor: 'gray.300' }}
-                _focus={{ borderColor: 'black', boxShadow: '0 0 0 1px black' }}
+                _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 1px black' }}
               />
             </Box>
 
             <Button
               size="sm"
-              bg="black"
+              bg="brand.500"
               color="white"
               onClick={handleSearch}
-              _hover={{ bg: 'gray.800' }}
+              _hover={{ bg: 'brand.600' }}
               flexShrink={0}
               w={{ base: 'full', md: 'auto' }}
             >
@@ -451,7 +451,7 @@ export default function UsersManagementPage() {
                             <Button
                               size="sm"
                               variant={currentPage === page ? 'solid' : 'ghost'}
-                              bg={currentPage === page ? 'black' : 'transparent'}
+                              bg={currentPage === page ? 'brand.500' : 'transparent'}
                               color={currentPage === page ? 'white' : 'gray.700'}
                               _hover={{
                                 bg: currentPage === page ? 'gray.800' : 'gray.100'

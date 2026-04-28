@@ -324,9 +324,9 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
           </Button>
           <Button
             onClick={handleSubmit}
-            bg="black"
+            bg="brand.500"
             color="white"
-            _hover={{ bg: 'gray.800' }}
+            _hover={{ bg: 'brand.600' }}
             loading={isSubmitting}
           >
             {isSubmitting ? 'Creazione...' : 'Crea Ticket'}
@@ -374,7 +374,7 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
                   onChange={handleChange}
                   placeholder="Es: Errore login mobile"
                   disabled={isSubmitting}
-                  _focus={{ borderColor: 'black', boxShadow: '0 0 0 1px black' }}
+                  _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 1px black' }}
                 />
               </Box>
 
@@ -391,7 +391,7 @@ export const CreateTicketModal = ({ isOpen, onClose, onSuccess, targetUser }: Cr
                   rows={6}
                   disabled={isSubmitting}
                   resize="vertical"
-                  _focus={{ borderColor: 'black', boxShadow: '0 0 0 1px black' }}
+                  _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 1px black' }}
                 />
               </Box>
 

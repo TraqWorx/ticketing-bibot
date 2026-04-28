@@ -79,7 +79,7 @@ export const UserMenu = () => {
         <Box
           w={8}
           h={8}
-          bg="black"
+          bg="brand.500"
           color="white"
           borderRadius="full"
           display="flex"

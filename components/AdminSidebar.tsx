@@ -57,10 +57,10 @@ const AdminSidebarContent = ({ onItemClick }: AdminSidebarContentProps) => {
                             px={3}
                             py={2.5}
                             cursor="pointer"
-                            bg={isActive ? 'black' : 'transparent'}
+                            bg={isActive ? 'brand.500' : 'transparent'}
                             color={isActive ? 'white' : 'gray.700'}
                             _hover={{
-                                bg: isActive ? 'black' : 'gray.100',
+                                bg: isActive ? 'brand.500' : 'gray.100',
                             }}
                             borderRadius="lg"
                             transition="all 0.2s"
@@ -119,7 +119,7 @@ export const AdminMobileSidebar = () => {
                 left={4}
                 zIndex={101}
                 bg="white"
-                color="black"
+                color="brand.500"
                 border="1px"
                 borderColor="gray.200"
                 _hover={{ bg: 'gray.50' }}

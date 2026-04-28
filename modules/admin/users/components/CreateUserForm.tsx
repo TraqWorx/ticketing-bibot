@@ -261,9 +261,9 @@ export const CreateUserForm = ({ onSubmit, onCancel }: CreateUserFormProps) => {
                     )}
                     <Button
                         type="submit"
-                        bg="black"
+                        bg="brand.500"
                         color="white"
-                        _hover={{ bg: 'gray.800' }}
+                        _hover={{ bg: 'brand.600' }}
                         disabled={isSubmitting}
                     >
                         {isSubmitting ? 'Creazione in corso...' : 'Crea Utente'}

@@ -188,9 +188,9 @@ export const LoginPage = () => {
               {/* Submit Button */}
               <Button
                 type="submit"
-                bg="black"
+                bg="brand.500"
                 color="white"
-                _hover={{ bg: 'gray.800' }}
+                _hover={{ bg: 'brand.600' }}
                 size="lg"
                 w="full"
                 disabled={isLoading}
@@ -237,9 +237,9 @@ export const LoginPage = () => {
               </Box>
               <Button
                 type="submit"
-                bg="black"
+                bg="brand.500"
                 color="white"
-                _hover={{ bg: 'gray.800' }}
+                _hover={{ bg: 'brand.600' }}
                 size="lg"
                 w="full"
                 disabled={isForgotLoading}

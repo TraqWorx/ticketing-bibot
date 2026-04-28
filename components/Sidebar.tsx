@@ -88,10 +88,10 @@ const SidebarContent = ({ onItemClick }: SidebarContentProps) => {
                 px={3}
                 py={2.5}
                 cursor="pointer"
-                bg={isActive ? 'black' : 'transparent'}
+                bg={isActive ? 'brand.500' : 'transparent'}
                 color={isActive ? 'white' : 'gray.700'}
                 _hover={{
-                  bg: isActive ? 'black' : 'gray.100',
+                  bg: isActive ? 'brand.500' : 'gray.100',
                 }}
                 borderRadius="lg"
                 transition="all 0.2s"

@@ -65,10 +65,10 @@ const ClientSidebarContent = ({ onItemClick }: ClientSidebarContentProps) => {
                                 px={3}
                                 py={2.5}
                                 cursor="pointer"
-                                bg={isActive ? 'black' : 'transparent'}
+                                bg={isActive ? 'brand.500' : 'transparent'}
                                 color={isActive ? 'white' : 'gray.700'}
                                 _hover={{
-                                    bg: isActive ? 'black' : 'gray.100',
+                                    bg: isActive ? 'brand.500' : 'gray.100',
                                 }}
                                 borderRadius="lg"
                                 transition="all 0.2s"
@@ -131,7 +131,7 @@ export const ClientMobileSidebar = () => {
                 boxShadow="md"
                 display={{ base: 'flex', lg: 'none' }}
                 borderRadius="full"
-                color="black"
+                color="brand.500"
                 _hover={{ bg: "gray.100" }}
             >
                 <Icon as={FiMenu} boxSize="20px" />

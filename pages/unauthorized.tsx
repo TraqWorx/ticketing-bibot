@@ -20,9 +20,9 @@ export default function UnauthorizedPage() {
           Non hai i permessi necessari per accedere a questa pagina.
         </Text>
         <Button
-          bg="black"
+          bg="brand.500"
           color="white"
-          _hover={{ bg: 'gray.800' }}
+          _hover={{ bg: 'brand.600' }}
           onClick={() => router.push('/')}
         >
           Torna alla Home

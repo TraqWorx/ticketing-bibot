@@ -555,7 +555,7 @@ export default function TicketDetailPage() {
         return (
             <Flex justify="center" align="center" minH="100vh" bg="gray.50">
                 <VStack gap={3}>
-                    <Spinner size="xl" color="black" />
+                    <Spinner size="xl" color="brand.500" />
                     <Text fontSize="sm" color="gray.500">Caricamento ticket...</Text>
                 </VStack>
             </Flex>

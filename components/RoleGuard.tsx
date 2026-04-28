@@ -48,7 +48,7 @@ export const RoleGuard = ({ children, allowedRoles }: RoleGuardProps) => {
     return (
       <Center h="100vh" bg="gray.50">
         <VStack gap={4}>
-          <Spinner size="xl" color="black" />
+          <Spinner size="xl" color="brand.500" />
           <Text color="gray.600">Verifica permessi...</Text>
         </VStack>
       </Center>
@@ -60,7 +60,7 @@ export const RoleGuard = ({ children, allowedRoles }: RoleGuardProps) => {
     return (
       <Center h="100vh" bg="gray.50">
         <VStack gap={4}>
-          <Spinner size="xl" color="black" />
+          <Spinner size="xl" color="brand.500" />
           <Text color="gray.600">Reindirizzamento...</Text>
         </VStack>
       </Center>

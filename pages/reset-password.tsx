@@ -382,14 +382,14 @@ export default function ResetPasswordPage() {
 
                         <Button
                             onClick={handleSubmit}
-                            colorScheme="black"
-                            bg="black"
+                            colorScheme="brand"
+                            bg="brand.500"
                             color="white"
                             size="lg"
                             w="full"
                             loading={isLoading}
                             loadingText="Impostazione password..."
-                            _hover={{ bg: 'gray.800' }}
+                            _hover={{ bg: 'brand.600' }}
                         >
                             Imposta Password
                         </Button>

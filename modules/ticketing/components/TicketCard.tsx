@@ -252,7 +252,7 @@ export const TicketCard = ({ ticket, onClick, index }: TicketCardProps) => {
                 w="24px"
                 h="24px"
                 borderRadius="full"
-                bg="black"
+                bg="brand.500"
                 color="white"
                 fontSize="10px"
                 fontWeight="600"
