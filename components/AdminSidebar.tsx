@@ -94,10 +94,10 @@ export const AdminDesktopSidebar = () => {
         >
             <Box p={6} borderBottom="1px" borderColor="gray.200">
                 <Box display="flex" justifyContent="center" alignItems="center">
-                    <img 
-                        src="/logo.svg" 
-                        alt="Blanco Studio" 
-                        style={{ height: '150px', width: 'auto' }}
+                    <img
+                        src="/logo.png"
+                        alt="Bibot"
+                        style={{ height: '120px', width: 'auto', borderRadius: '20px' }}
                     />
                 </Box>
             </Box>
@@ -134,10 +134,10 @@ export const AdminMobileSidebar = () => {
                     <Drawer.Content>
                         <Drawer.Header borderBottom="1px" borderColor="gray.200">
                             <Box display="flex" justifyContent="space-between" alignItems="center" w="full">
-                                <img 
-                                    src="/logo.svg" 
-                                    alt="Blanco Studio" 
-                                    style={{ height: '40px', width: 'auto' }}
+                                <img
+                                    src="/logo.png"
+                                    alt="Bibot"
+                                    style={{ height: '40px', width: 'auto', borderRadius: '8px' }}
                                 />
                                 <Drawer.CloseTrigger asChild>
                                     <CloseButton />

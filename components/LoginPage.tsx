@@ -136,10 +136,10 @@ export const LoginPage = () => {
         <VStack gap={6} align="stretch">
           {/* Logo / Header */}
           <Box textAlign="center">
-            <img 
-              src="/logo.svg" 
-              alt="Blanco Studio" 
-              style={{ height: '150px', margin: '0 auto' }} 
+            <img
+              src="/logo.png"
+              alt="Bibot"
+              style={{ height: '150px', margin: '0 auto', borderRadius: '24px' }}
             />
           </Box>
 

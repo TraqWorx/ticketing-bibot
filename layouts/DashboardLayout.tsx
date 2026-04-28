@@ -40,7 +40,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         zIndex={99}
         display={{ base: 'block', lg: 'none' }} // Mobile/tablet only
       >
-        <Header appName="Blanco Studio" />
+        <Header appName="Bibot" />
       </Box>
 
       {/* Sidebar Desktop - Fixed left */}
@@ -57,7 +57,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         {/* Header Desktop - Parte del content flow */}
         <Box display={{ base: 'none', lg: 'block' }}>
-          <Header appName="Blanco Studio" />
+          <Header appName="Bibot" />
         </Box>
 
         {/* Content */}

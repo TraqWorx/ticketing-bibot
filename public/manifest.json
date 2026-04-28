@@ -1,11 +1,11 @@
 {
-  "name": "Blanco Studio",
-  "short_name": "Blanco Studio",
-  "description": "Blanco Studio",
+  "name": "Bibot",
+  "short_name": "Bibot",
+  "description": "Bibot Support Cockpit",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "theme_color": "#3D00B5",
   "icons": [
     {
       "src": "/logo-icon.png",

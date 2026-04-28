@@ -11,9 +11,9 @@ export default function Document() {
     <Html lang="it">
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-        <title>Blanco Studio</title>
-        <meta name="description" content="Blanco Studio" />
-        <link rel="icon" href="/logo-icon.ico" />
+        <title>Bibot</title>
+        <meta name="description" content="Bibot Support Cockpit" />
+        <link rel="icon" type="image/png" href="/logo-icon.png" />
         <link rel="apple-touch-icon" href="/logo-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -19,7 +19,7 @@ interface HeaderProps {
   appName?: string;
 }
 
-export const Header = ({ appName = 'Blanco Studio Admin' }: HeaderProps) => {
+export const Header = ({ appName = 'Bibot' }: HeaderProps) => {
 
 return (
     <Box
@@ -39,15 +39,13 @@ return (
             <Box
               w={10}
               h={10}
-              bg="black"
               borderRadius="md"
+              overflow="hidden"
               display="flex"
               alignItems="center"
               justifyContent="center"
             >
-              <Text color="white" fontWeight="bold" fontSize="lg">
-                B
-              </Text>
+              <img src="/logo.png" alt="Bibot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </Box>
             <Text 
               fontSize="xl" 

@@ -138,20 +138,15 @@ export const DesktopSidebar = () => {
       <Box p={6} borderBottom="1px" borderColor="gray.200">
         <HStack gap={3}>
           <Box
-            w={8}
-            h={8}
-            bg="black"
+            w={10}
+            h={10}
             borderRadius="md"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
+            overflow="hidden"
           >
-            <Text color="white" fontWeight="bold" fontSize="md">
-              B
-            </Text>
+            <img src="/logo.png" alt="Bibot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </Box>
-          <Text fontSize="lg" fontWeight="bold" color="black">
-            Blanco Studio
+          <Text fontSize="lg" fontWeight="bold" color="brand.500">
+            Bibot
           </Text>
         </HStack>
       </Box>
@@ -192,21 +187,11 @@ export const MobileSidebar = () => {
             <Drawer.Header borderBottom="1px" borderColor="gray.200">
               <Box display="flex" justifyContent="space-between" alignItems="center" w="full">
                 <HStack gap={3}>
-                  <Box
-                    w={8}
-                    h={8}
-                    bg="black"
-                    borderRadius="md"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Text color="white" fontWeight="bold" fontSize="md">
-                      B
-                    </Text>
+                  <Box w={10} h={10} borderRadius="md" overflow="hidden">
+                    <img src="/logo.png" alt="Bibot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </Box>
-                  <Text fontSize="lg" fontWeight="bold" color="black">
-                    Blanco Studio
+                  <Text fontSize="lg" fontWeight="bold" color="brand.500">
+                    Bibot
                   </Text>
                 </HStack>
                 <Drawer.CloseTrigger asChild>
