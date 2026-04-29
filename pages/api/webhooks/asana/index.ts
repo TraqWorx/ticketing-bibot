@@ -56,7 +56,7 @@
 
 import { getStory, getTaskDetail } from '@/lib/asana/asanaService';
 import { sendTicketCompletedEvent, sendTicketCreatedEvent, sendTicketReopenedEvent, sendTicketRepliedByAdminEvent } from '@/lib/ghl/ghlService';
-import { closeTicket, createTicket, deleteTicket, getTicket, getUserById, reopenTicket, updateTicket, updateTicketOnReply } from '@/lib/ticket/ticketService';
+import { closeTicket, createTicket, deleteTicket, getTicket, getUserById, markCompletedFired, markReopenFired, reopenTicket, updateTicket, updateTicketOnReply } from '@/lib/ticket/ticketService';
 import { FirestoreTicket } from '@/types/ticket';
 import { NextApiRequest, NextApiResponse } from 'next';
 
@@ -131,6 +131,12 @@ async function processAsanaEvent(event: any): Promise<void> {
   // Evento: Story di riapertura task
   if (resource?.resource_type === 'story' && action === 'added' && resource?.resource_subtype === 'marked_incomplete') {
     await handleTaskMarkedIncomplete(event);
+    return;
+  }
+
+  // Evento: Spostamento del task tra sezioni (Aperti/In Lavorazione/Completati)
+  if (resource?.resource_type === 'story' && action === 'added' && resource?.resource_subtype === 'section_changed') {
+    await handleTaskSectionChanged(event);
     return;
   }
 
@@ -345,6 +351,17 @@ async function handleTaskChanged(event: any): Promise<void> {
   }
 }
 
+// Dedup window: skip duplicate GHL fires that arrive within this many ms
+const GHL_FIRE_DEDUP_WINDOW_MS = 60_000;
+
+function firedRecently(timestamp: any): boolean {
+  if (!timestamp) return false;
+  const ms = typeof timestamp.toMillis === 'function'
+    ? timestamp.toMillis()
+    : new Date(timestamp).getTime();
+  return Number.isFinite(ms) && Date.now() - ms < GHL_FIRE_DEDUP_WINDOW_MS;
+}
+
 /**
  * Gestisce story di completamento task (più affidabile del change event)
  */
@@ -364,37 +381,44 @@ async function handleTaskMarkedComplete(event: any): Promise<void> {
       return;
     }
 
-    // Verifica se il ticket non è già chiuso
-    if (ticket.status === 'completed') {
+    // Sync Firestore (idempotente)
+    if (ticket.status !== 'completed') {
+      await closeTicket(taskGid);
+    }
+
+    // Dedup: salta GHL se già inviato di recente (evita doppio invio
+    // quando arrivano in coppia marked_complete + section_changed)
+    if (firedRecently((ticket as any).lastCompletedFiredAt)) {
       return;
     }
 
-    // Chiudi il ticket su Firestore
-    await closeTicket(taskGid);
-
     // Invia notifica a GHL
     if (ticket.ghlContactId) {
+      const [firstName, ...rest] = (ticket.clientName || '').split(' ');
+      const lastName = rest.join(' ');
+      const completedBaseParams = {
+        clientId: ticket.clientId,
+        ghlContactId: ticket.ghlContactId,
+        ticketId: taskGid,
+        title: ticket.title,
+        priority: ticket.priority,
+        firstName,
+        lastName,
+        clientPhone: ticket.clientPhone,
+      };
       try {
         const client = await getUserById(ticket.clientId);
         const delegates = client?.delegates || [];
-        await sendTicketCompletedEvent({
-          clientId: ticket.clientId,
-          ghlContactId: ticket.ghlContactId,
-          ticketId: taskGid,
-          delegates,
-        });
+        await sendTicketCompletedEvent({ ...completedBaseParams, delegates });
       } catch (err) {
         console.warn('[Asana Webhook] Impossibile recuperare delegati per sendTicketCompletedEvent (story):', err);
-        await sendTicketCompletedEvent({
-          clientId: ticket.clientId,
-          ghlContactId: ticket.ghlContactId,
-          ticketId: taskGid,
-        });
+        await sendTicketCompletedEvent(completedBaseParams);
       }
+      await markCompletedFired(taskGid);
     }
 
   } catch (error: any) {
-    console.error('[Asana Webhook] Errore riapertura ticket da story:', error.message, error.stack);
+    console.error('[Asana Webhook] Errore completamento ticket da story:', error.message, error.stack);
   }
 }
 /**
@@ -416,39 +440,69 @@ async function handleTaskMarkedIncomplete(event: any): Promise<void> {
       return;
     }
 
-    // Verifica se il ticket è già aperto
-    if (ticket.status === 'open') {
+    // Sync Firestore (idempotente)
+    if (ticket.status !== 'open') {
+      await reopenTicket(taskGid, 'admin');
+    }
+
+    // Dedup: salta GHL se già inviato di recente (evita doppio invio
+    // quando arrivano in coppia marked_incomplete + section_changed)
+    if (firedRecently((ticket as any).lastReopenedFiredAt)) {
       return;
     }
 
-    // Riapri il ticket su Firestore (riaperto)
-    await reopenTicket(taskGid, 'admin');
-
     // Invia notifica a GHL
     if (ticket.ghlContactId) {
+      const [firstName, ...rest] = (ticket.clientName || '').split(' ');
+      const lastName = rest.join(' ');
+      const reopenedBaseParams = {
+        clientId: ticket.clientId,
+        ghlContactId: ticket.ghlContactId,
+        ticketId: taskGid,
+        title: ticket.title,
+        priority: ticket.priority,
+        firstName,
+        lastName,
+        clientPhone: ticket.clientPhone,
+        reopenedBy: 'admin' as const,
+      };
       try {
         const client = await getUserById(ticket.clientId);
         const delegates = client?.delegates || [];
-        await sendTicketReopenedEvent({
-          clientId: ticket.clientId,
-          ghlContactId: ticket.ghlContactId,
-          ticketId: taskGid,
-          reopenedBy: 'admin',
-          delegates,
-        });
+        await sendTicketReopenedEvent({ ...reopenedBaseParams, delegates });
       } catch (err) {
         console.warn('[Asana Webhook] Impossibile recuperare delegati per sendTicketReopenedEvent:', err);
-        await sendTicketReopenedEvent({
-          clientId: ticket.clientId,
-          ghlContactId: ticket.ghlContactId,
-          ticketId: taskGid,
-          reopenedBy: 'admin',
-        });
+        await sendTicketReopenedEvent(reopenedBaseParams);
       }
+      await markReopenFired(taskGid);
     }
 
   } catch (error: any) {
     console.error('[Asana Webhook] Errore riapertura ticket da story:', error.message, error.stack);
+  }
+}
+
+/**
+ * Gestisce story di spostamento tra sezioni del progetto.
+ * Inferisce lo stato dal nome della nuova sezione e delega
+ * a handleTaskMarkedComplete / handleTaskMarkedIncomplete.
+ */
+async function handleTaskSectionChanged(event: any): Promise<void> {
+  const taskGid = event.parent?.gid;
+  if (!taskGid) return;
+
+  try {
+    const taskDetail = await getTaskDetail(taskGid);
+    const sectionName = (taskDetail?.data?.memberships?.[0]?.section?.name || '').toLowerCase();
+    const isCompleted = sectionName.includes('completati') || sectionName.includes('completed') || sectionName.includes('done');
+
+    if (isCompleted) {
+      await handleTaskMarkedComplete(event);
+    } else {
+      await handleTaskMarkedIncomplete(event);
+    }
+  } catch (error: any) {
+    console.error('[Asana Webhook] Errore section_changed:', error.message, error.stack);
   }
 }
 

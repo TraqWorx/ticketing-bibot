@@ -170,6 +170,11 @@ export interface GHLTicketCompletedPayload extends GHLWebhookPayload {
     ghlContactId?: string;
     ticketId: string;
     ticketUrl?: string;
+    title?: string;
+    priority?: string;
+    firstName?: string;
+    lastName?: string;
+    clientPhone?: string;
     completedAt: string;
   };
 }
@@ -184,6 +189,11 @@ export interface GHLTicketReopenedPayload extends GHLWebhookPayload {
     ghlContactId: string;
     ticketId: string;
     ticketUrl?: string;
+    title?: string;
+    priority?: string;
+    firstName?: string;
+    lastName?: string;
+    clientPhone?: string;
     reopenedAt: string;
     reopenedBy: 'admin' | 'client';
   };

@@ -13,7 +13,6 @@
 
 import { AsanaTaskDetail } from '@/types';
 import axios from '@/utils/axios';
-import { sendTicketReopenedEvent } from '@/lib/ghl/ghlService';
 import { renderTextWithLinks } from '@/utils/commonUtils';
 import {
     Badge,
@@ -272,16 +271,6 @@ export default function TicketDetailPage() {
             d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
     };
 
-    // Helper per estrarre clientId dai custom fields Asana
-    const getClientIdFromAsana = (taskDetail: AsanaTaskDetail) => {
-        const clientIdField = taskDetail.custom_fields?.find(
-            (cf: any) => cf.name?.toLowerCase() === 'client_id' ||
-                cf.name?.toLowerCase() === 'cliente_id' ||
-                cf.name?.toLowerCase() === 'user_id'
-        );
-        return clientIdField?.display_value || clientIdField?.text_value || null;
-    };
-
     // Helper per estrarre priorità dai custom fields Asana
     const getPriorityFromAsana = (taskDetail: AsanaTaskDetail) => {
         const priorityCustomField = taskDetail.custom_fields?.find(
@@ -510,39 +499,14 @@ export default function TicketDetailPage() {
 
     const handleReopenTicket = async () => {
         try {
-            const response = await axios.put('/api/asana/update-task', {
+            const response = await axios.post('/api/tickets/reopen', {
                 taskGid: id as string,
-                updates: { completed: false },
             });
 
             if (response.data.success) {
                 toast.success('Ticket riaperto con successo');
                 await loadTaskDetail();
-
-                // Invia evento a GHL per workflow di riapertura
-                const clientId = taskDetail ? getClientIdFromAsana(taskDetail) : null;
-
-                if (clientId && firestoreData?.ghlContactId) {
-                    try {
-                        await sendTicketReopenedEvent({
-                            clientId,
-                            ghlContactId: firestoreData.ghlContactId,
-                            ticketId: id as string,
-                            reopenedBy: 'admin',
-                        });
-                    } catch (ghlError) {
-                        console.error('Errore invio evento GHL riapertura ticket:', ghlError);
-                        // Non bloccare il flusso se GHL fallisce
-                    }
-                } else {
-                    console.warn('Impossibile inviare evento GHL: dati mancanti', {
-                        hasClientId: !!clientId,
-                        hasFirestoreData: !!firestoreData,
-                        hasGhlContactId: !!firestoreData?.ghlContactId
-                    });
-                }
             } else {
-                // Caso in cui il backend ritorna success: false
                 toast.error(response.data.message || 'Errore durante la riapertura del ticket');
             }
         } catch (error: any) {

@@ -309,7 +309,7 @@ export async function getTaskDetail(taskGid: string): Promise<any> {
     try {
         const axios = require('axios');
         const response = await axios.get(
-            `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}?opt_fields=gid,name,notes,completed,created_at,modified_at,permalink_url,attachments.name,attachments.download_url,attachments.gid,attachments.view_url,due_on,custom_fields`,
+            `${process.env.ASANA_API_BASE_URL}/tasks/${taskGid}?opt_fields=gid,name,notes,completed,created_at,modified_at,permalink_url,attachments.name,attachments.download_url,attachments.gid,attachments.view_url,due_on,custom_fields,memberships.section.name,memberships.section.gid`,
             {
                 headers: {
                     'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,
@@ -427,6 +427,30 @@ export async function getStory(storyGid: string): Promise<any> {
         console.error('Errore recupero story:', error);
         throw new Error(error.message || 'Errore durante il recupero della story');
     }
+}
+
+/**
+ * Sposta un task in una sezione del progetto
+ */
+export async function moveAsanaTaskToSection(taskGid: string, sectionGid: string): Promise<void> {
+    if (!process.env.ASANA_API_BASE_URL) {
+        throw new Error('ASANA_API_BASE_URL non configurato nel .env');
+    }
+    if (!process.env.ASANA_ACCESS_TOKEN) {
+        throw new Error('ASANA_ACCESS_TOKEN non configurato nel .env');
+    }
+
+    const axios = require('axios');
+    await axios.post(
+        `${process.env.ASANA_API_BASE_URL}/sections/${sectionGid}/addTask`,
+        { data: { task: taskGid } },
+        {
+            headers: {
+                'Authorization': `Bearer ${process.env.ASANA_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    );
 }
 
 /**

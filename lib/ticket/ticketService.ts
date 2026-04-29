@@ -157,6 +157,26 @@ export async function reopenTicket(ticketId: string, reopenedBy: MessageAuthor):
 }
 
 /**
+ * Registra il timestamp dell'ultimo invio webhook GHL "ticket_reopened" per dedup
+ */
+export async function markReopenFired(ticketId: string): Promise<void> {
+  await adminDb
+    .collection(TICKETS_COLLECTION)
+    .doc(ticketId)
+    .update({ lastReopenedFiredAt: FieldValue.serverTimestamp() });
+}
+
+/**
+ * Registra il timestamp dell'ultimo invio webhook GHL "ticket_completed" per dedup
+ */
+export async function markCompletedFired(ticketId: string): Promise<void> {
+  await adminDb
+    .collection(TICKETS_COLLECTION)
+    .doc(ticketId)
+    .update({ lastCompletedFiredAt: FieldValue.serverTimestamp() });
+}
+
+/**
  * Verifica se un ticket esiste su Firestore
  */
 export async function ticketExists(ticketId: string): Promise<boolean> {

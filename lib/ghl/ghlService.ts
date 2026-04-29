@@ -443,13 +443,18 @@ export async function sendTicketCompletedEvent(params: {
     clientId: string;
     ghlContactId?: string;
     ticketId: string;
+    title?: string;
+    priority?: string;
+    firstName?: string;
+    lastName?: string;
+    clientPhone?: string;
     delegates?: UserDelegate[];
 }): Promise<boolean> {
     const webhookUrl = process.env.GHL_WEBHOOK_TICKET_COMPLETED;
 
     const allContacts = [
-        { ghlContactId: params.ghlContactId },
-        ...(params.delegates?.map(d => ({ ghlContactId: d.ghl_contact_id })) || [])
+        { ghlContactId: params.ghlContactId, firstName: params.firstName, lastName: params.lastName, clientPhone: params.clientPhone },
+        ...(params.delegates?.map(d => ({ ghlContactId: d.ghl_contact_id, firstName: d.firstName, lastName: d.lastName, clientPhone: d.phone })) || [])
     ].filter(c => c.ghlContactId);
 
     for (const contact of allContacts) {
@@ -461,10 +466,15 @@ export async function sendTicketCompletedEvent(params: {
                 ghlContactId: contact.ghlContactId || '',
                 ticketId: params.ticketId,
                 ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
+                title: params.title,
+                priority: params.priority,
+                firstName: contact.firstName,
+                lastName: contact.lastName,
+                clientPhone: contact.clientPhone,
                 completedAt: new Date().toISOString(),
             },
         };
-        sendWebhookToUrl(webhookUrl || '', payload);
+        await sendWebhookToUrl(webhookUrl || '', payload);
     }
     return true;
 }
@@ -476,6 +486,11 @@ export async function sendTicketReopenedEvent(params: {
     clientId: string;
     ghlContactId: string;
     ticketId: string;
+    title?: string;
+    priority?: string;
+    firstName?: string;
+    lastName?: string;
+    clientPhone?: string;
     reopenedBy: 'admin' | 'client';
     delegates?: UserDelegate[];
 }): Promise<boolean> {
@@ -483,8 +498,8 @@ export async function sendTicketReopenedEvent(params: {
     const ticketReopenedSendAdminMsgWebhookUrl = process.env.GHL_WEBHOOK_TICKET_RE_OPENED_SEND_ADMIN_MSG;
 
     const allContacts = [
-        { ghlContactId: params.ghlContactId },
-        ...(params.delegates?.map(d => ({ ghlContactId: d.ghl_contact_id })) || [])
+        { ghlContactId: params.ghlContactId, firstName: params.firstName, lastName: params.lastName, clientPhone: params.clientPhone },
+        ...(params.delegates?.map(d => ({ ghlContactId: d.ghl_contact_id, firstName: d.firstName, lastName: d.lastName, clientPhone: d.phone })) || [])
     ].filter(c => c.ghlContactId);
 
     for (const contact of allContacts) {
@@ -496,12 +511,17 @@ export async function sendTicketReopenedEvent(params: {
                 ghlContactId: contact.ghlContactId || '',
                 ticketId: params.ticketId,
                 ticketUrl: `${process.env.NEXT_PUBLIC_APP_URL}/clienti/ticketing/${params.ticketId}`,
+                title: params.title,
+                priority: params.priority,
+                firstName: contact.firstName,
+                lastName: contact.lastName,
+                clientPhone: contact.clientPhone,
                 reopenedAt: new Date().toISOString(),
                 reopenedBy: params.reopenedBy,
             },
         };
-        sendWebhookToUrl(ticketReopenedSendClientMsgWebhookUrl || '', payload);
-        sendWebhookToUrl(ticketReopenedSendAdminMsgWebhookUrl || '', payload);
+        await sendWebhookToUrl(ticketReopenedSendClientMsgWebhookUrl || '', payload);
+        await sendWebhookToUrl(ticketReopenedSendAdminMsgWebhookUrl || '', payload);
     }
     return true;
 
