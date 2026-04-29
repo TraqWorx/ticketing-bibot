@@ -115,6 +115,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
     if (existing) {
       const docRef = adminDb.collection('users').doc(existing.uid);
       const snap = await docRef.get();
+      const profile = snap.data() || {};
       const updates: Record<string, any> = {
         updatedAt: new Date().toISOString(),
         ...(ghlContactId ? { ghl_contact_id: ghlContactId } : {}),
@@ -125,10 +126,42 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       };
       await docRef.set(updates, { merge: true });
 
+      // Re-fire welcome if the original silently failed:
+      // user has no password set AND no live reset token.
+      let reissued = false;
+      if (existing.providerData.length === 0) {
+        const tokens = await adminDb
+          .collection('passwordResetTokens')
+          .where('email', '==', normalizedEmail)
+          .get();
+        const nowMs = Date.now();
+        const hasLiveToken = tokens.docs.some(d => {
+          const exp = d.data().expiresAt;
+          const expMs = exp?.toMillis?.() ?? (exp ? new Date(exp).getTime() : 0);
+          return expMs > nowMs;
+        });
+        if (!hasLiveToken) {
+          try {
+            await sendPasswordResetWebhook({
+              id: existing.uid,
+              ghl_contact_id: ghlContactId || profile.ghl_contact_id || '',
+              email: normalizedEmail,
+              firstName: firstName || profile.firstName || '',
+              lastName: lastName || profile.lastName || '',
+            });
+            reissued = true;
+          } catch (welcomeErr: any) {
+            console.error('[provision-from-ghl] Welcome re-issue failed:', welcomeErr);
+          }
+        }
+      }
+
       return res.status(200).json({
         success: true,
-        action: 'already_provisioned',
-        message: 'Utente già esistente. Profilo aggiornato.',
+        action: reissued ? 'welcome_reissued' : 'already_provisioned',
+        message: reissued
+          ? 'Utente già esistente. Welcome rinviato.'
+          : 'Utente già esistente. Profilo aggiornato.',
         userId: existing.uid,
       });
     }
